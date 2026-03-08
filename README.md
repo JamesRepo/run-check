@@ -2,16 +2,47 @@
 
 A new Flutter project.
 
-## Getting Started
+## Prerequisites
 
-This project is a starting point for a Flutter application.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install)
+- For Android: Android Studio with Android SDK
+- For iOS: Xcode (macOS only)
+- For Web: Chrome
 
-A few resources to get you started if this is your first Flutter project:
+## Setup
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Running
+
+```bash
+# List available devices
+flutter devices
+
+# Run on a specific platform
+flutter run -d chrome       # Web
+flutter run -d android      # Android emulator/device
+flutter run -d ios           # iOS simulator/device
+```
+
+## Linting
+
+```bash
+flutter analyze
+```
+
+## Testing
+
+```bash
+flutter test
+```
+
+## Building
+
+```bash
+flutter build apk        # Android
+flutter build ios         # iOS
+flutter build web         # Web
+```
