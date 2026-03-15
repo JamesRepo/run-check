@@ -17,6 +17,7 @@ lib/
   models/         — Data classes and domain objects
   services/       — API clients, business logic, local storage
 test/             — Widget and unit tests
+agents/prompts/   — Agent workflow prompts (implement → test → review → fix)
 ```
 
 ## Commands
@@ -33,6 +34,15 @@ test/             — Widget and unit tests
 - Keep widgets small and composable — extract to `widgets/` when reused
 - Business logic belongs in `services/`, not in widget code
 - Use `const` constructors wherever possible
+
+## State Management
+- No state management package — use `StatefulWidget` and `setState` for now
+- When complexity grows, revisit and adopt a package (e.g. Riverpod)
+
+## Models & Services Conventions
+- Models are immutable data classes in `lib/models/`
+- Use manual `fromJson`/`toJson` factory constructors for serialization
+- Services in `lib/services/` own all business logic and API calls — widgets never call APIs directly
 
 ## Key Domain Concepts
 - Users are runners or cyclists
