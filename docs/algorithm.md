@@ -2,71 +2,75 @@
 
 ## Overview
 
-Given a user's location, activity type, and desired training frequency, find
-the N best weather windows in the next 7 days.
+Given a user's location and desired training frequency, find the N best
+weather windows in the next 7 days.
+
+**Implementation:** `lib/services/run_scheduler.dart` — `RunScheduler` class.
 
 ---
 
 ## Step 1: Fetch Forecast
 
-Fetch the 7-day hourly forecast for the user's location.
+Fetch the 7-day hourly forecast for the user's location via Open-Meteo.
 
-**Required fields per hour:**
-| Field              | Unit   | Example |
-|--------------------|--------|---------|
-| temperature        | °C     | 18      |
-| feels_like         | °C     | 16      |
-| precipitation_prob | 0–1    | 0.1     |
-| precipitation_mm   | mm     | 0.0     |
-| wind_speed         | km/h   | 12      |
-| wind_gust          | km/h   | 20      |
-| humidity           | 0–1    | 0.55    |
-| uv_index           | 0–11+  | 4       |
-| condition_code     | string | "clear" |
+**Fields per hour (from `HourlyForecast`):**
+| Field                    | Unit   | Example |
+|--------------------------|--------|---------|
+| temperature              | °C     | 18      |
+| precipitationProbability | 0–100  | 10      |
+| windSpeed                | km/h   | 12      |
+| humidity                 | 0–100  | 55      |
+| weatherCode              | int    | 0       |
 
-> **Improvement: use `feels_like` instead of raw temperature.** A 10°C day
-> with 30 km/h wind feels very different from a calm one. Feels-like already
-> factors in wind chill and heat index, so it's a better proxy for comfort.
+> **Future improvement: use `feels_like` instead of raw temperature.** A
+> 10 °C day with 30 km/h wind feels very different from a calm one.
+> Feels-like already factors in wind chill and heat index, so it's a
+> better proxy for comfort. Not yet available in the data model.
 
 ---
 
 ## Step 2: Filter Candidate Slots
 
-### 2a. Hard filters (reject immediately)
+### 2a. Time-of-day filter
 
-These conditions make outdoor exercise unsafe or miserable regardless of score.
-Reject any hour where:
+Keep only hours within the user's preferred periods:
 
-| Condition               | Threshold          |
-|-------------------------|--------------------|
-| Thunderstorm / ice      | condition_code     |
-| Precipitation prob      | > 0.80             |
-| Wind gust               | > 50 km/h          |
-| Feels-like temperature  | < -10°C or > 38°C  |
+| Period    | Hours       |
+|-----------|-------------|
+| morning   | 05:00–11:59 |
+| afternoon | 12:00–17:59 |
+| evening   | 18:00–21:00 |
 
-Filtering these out first avoids wasting scoring on slots nobody should use.
+All three periods are included by default. The user can limit to a subset.
 
-### 2b. Time window filter
+### 2b. Sunrise/sunset filter
 
-Keep only hours within the user's preferred window.
-
-- Default: 06:00–21:00
-- Could refine with sunrise/sunset data so you never suggest a 06:00 run in
-  winter when sunrise is at 08:00.
+If `sunData` is provided, also exclude hours before sunrise or after sunset
+for that day. This prevents suggesting a 05:00 run in winter when sunrise
+is at 08:00.
 
 ### 2c. Build multi-hour blocks
 
-If the user wants 1-hour sessions, each hour is a candidate slot. For longer
-sessions (e.g. 90 min cycling), use a sliding window and score based on the
-**worst hour** in the block — a run is only as good as the worst weather you
-hit during it.
+If the user wants 1-hour sessions, each hour is a candidate slot. For
+longer sessions (e.g. 90 min), use a sliding window over consecutive
+filtered hours. The number of hours needed is `ceil(durationMinutes / 60)`.
+
+A window's metrics are the **average** of its constituent hours.
 
 ```
-For a duration of D hours:
-  For each starting hour H where H+D is still in the time window:
-    slot = hours[H..H+D-1]
-    slot.score = min(score(hour) for hour in slot)  // worst-hour rule
+For a duration of D hours (D = ceil(runDurationMinutes / 60)):
+  For each starting index I in filtered hours:
+    window = filtered[I..I+D-1]
+    if all hours in window are consecutive (1-hour gaps):
+      keep as candidate
+    window.metrics = average of constituent hours
 ```
+
+> **Design note:** The original spec proposed a worst-hour rule (score =
+> min of individual hours). The implementation uses averaging instead,
+> which produces smoother scoring and avoids a single marginal hour
+> tanking an otherwise good window. This could be revisited if users
+> report being surprised by conditions mid-run.
 
 ---
 
@@ -75,167 +79,179 @@ For a duration of D hours:
 ### Formula
 
 ```
-score = w1 * temp_score
-      + w2 * precip_score
-      + w3 * wind_score
-      + w4 * humidity_score
+score = 0.35 * precip_score
+      + 0.30 * temp_score
+      + 0.20 * wind_score
+      + 0.15 * humidity_score
 ```
 
-All sub-scores are normalised to **0.0–1.0** (1.0 = perfect conditions).
+Weights are defined in `lib/utils/constants.dart`. All sub-scores are
+normalised to **0.0–1.0** (1.0 = perfect conditions).
 
 ### Sub-score functions
 
-#### Temperature (using feels_like)
+All sub-score methods are `public static` on `RunScheduler` for easy
+unit testing.
 
-Piecewise linear with an ideal range. Different per activity:
+#### Temperature
+
+Piecewise linear with an ideal range of **12–18 °C**:
 
 ```
-Running ideal:  8–18°C  (you warm up fast)
-Cycling ideal: 12–22°C  (wind chill from speed)
-
          1.0 |     ___________
              |    /           \
          0.0 |___/             \___
-             -5   8    18   35    (°C, running)
+             0   12    18   35    (°C)
 ```
 
 ```dart
-double tempScore(double feelsLike, {bool isCycling = false}) {
-  final idealLow  = isCycling ? 12.0 : 8.0;
-  final idealHigh = isCycling ? 22.0 : 18.0;
-  final absLow    = isCycling ? 0.0  : -5.0;
-  final absHigh   = isCycling ? 35.0 : 35.0;
+static double tempScore(double temperature) {
+  const idealLow = 12.0;
+  const idealHigh = 18.0;
+  const absLow = 0.0;   // below 0 °C → 0.0
+  const absHigh = 35.0;  // above 35 °C → 0.0
 
-  if (feelsLike >= idealLow && feelsLike <= idealHigh) return 1.0;
-  if (feelsLike < absLow || feelsLike > absHigh) return 0.0;
-  if (feelsLike < idealLow) {
-    return (feelsLike - absLow) / (idealLow - absLow);
+  if (temperature >= idealLow && temperature <= idealHigh) return 1.0;
+  if (temperature < absLow || temperature > absHigh) return 0.0;
+  if (temperature < idealLow) {
+    return (temperature - absLow) / (idealLow - absLow);
   }
-  return (absHigh - feelsLike) / (absHigh - idealHigh);
+  return (absHigh - temperature) / (absHigh - idealHigh);
 }
 ```
 
 #### Precipitation
 
-Precipitation probability is the strongest negative signal. Use a steep curve
-so anything above ~40% drops sharply.
+Simple linear mapping from probability (0–100) to score.
 
 ```dart
-double precipScore(double prob, double mm) {
-  // Probability dominates, but actual mm is a tiebreaker
-  final probScore = 1.0 - prob.clamp(0.0, 1.0);
-  final mmPenalty = (mm / 5.0).clamp(0.0, 1.0); // 5mm+ = full penalty
-  return (probScore * 0.8) + ((1.0 - mmPenalty) * 0.2);
+static double precipScore(double precipitationProbability) {
+  return 1.0 - (precipitationProbability / 100).clamp(0.0, 1.0);
 }
 ```
+
+> **Simplification from original spec:** The original formula also
+> factored in precipitation amount (mm). The current data model only has
+> probability, so this is a straight linear inverse. The mm tiebreaker
+> can be added when the model expands.
 
 #### Wind
 
 ```dart
-double windScore(double speedKmh, double gustKmh, {bool isCycling = false}) {
-  // Cyclists are more affected by wind
-  final threshold = isCycling ? 20.0 : 30.0;
-  final gustThreshold = isCycling ? 35.0 : 45.0;
-  final speedScore = 1.0 - (speedKmh / threshold).clamp(0.0, 1.0);
-  final gustScore  = 1.0 - (gustKmh / gustThreshold).clamp(0.0, 1.0);
-  return speedScore * 0.7 + gustScore * 0.3;
+static double windScore(double windSpeedKmh) {
+  const calm = 10.0;   // 1.0 at ≤ 10 km/h
+  const limit = 40.0;  // 0.0 at ≥ 40 km/h
+
+  if (windSpeedKmh <= calm) return 1.0;
+  if (windSpeedKmh >= limit) return 0.0;
+  return 1.0 - (windSpeedKmh - calm) / (limit - calm);
 }
 ```
+
+> **Simplification from original spec:** The original formula also used
+> wind gust data and had cycling-specific thresholds. The current data
+> model only has `windSpeed`, so gusts are not factored in yet.
 
 #### Humidity
 
-High humidity makes running miserable, less so for cycling (airflow).
+Humidity values are percentages (0–100).
 
 ```dart
-double humidityScore(double humidity, {bool isCycling = false}) {
-  // Ideal: 30–60%. Above 80% is bad, especially for running.
-  if (humidity <= 0.6) return 1.0;
-  final ceiling = isCycling ? 0.90 : 0.85;
-  return 1.0 - ((humidity - 0.6) / (ceiling - 0.6)).clamp(0.0, 1.0);
+static double humidityScore(double humidity) {
+  const comfortHigh = 60.0;  // 1.0 at ≤ 60%
+  const ceiling = 90.0;      // 0.0 at ≥ 90%
+
+  if (humidity <= comfortHigh) return 1.0;
+  if (humidity >= ceiling) return 0.0;
+  return 1.0 - (humidity - comfortHigh) / (ceiling - comfortHigh);
 }
 ```
 
-### Default weights
+### Weights
 
-| Weight | Running | Cycling | Rationale                              |
-|--------|---------|---------|----------------------------------------|
-| w1     | 0.25    | 0.20    | Temperature matters but is tolerable   |
-| w2     | 0.40    | 0.35    | Rain is the top reason people skip     |
-| w3     | 0.15    | 0.30    | Wind is a bigger deal on a bike        |
-| w4     | 0.20    | 0.15    | Humidity affects runners more           |
+| Weight | Value | Rationale                             |
+|--------|-------|---------------------------------------|
+| w1     | 0.35  | Precipitation — top reason to skip    |
+| w2     | 0.30  | Temperature — comfort                 |
+| w3     | 0.20  | Wind — noticeable but tolerable       |
+| w4     | 0.15  | Humidity — mostly a summer factor     |
 
-> Weights should sum to 1.0. Could later let users adjust these via a
-> "what bothers you most?" preference screen.
+> Weights sum to 1.0 and are defined in `lib/utils/constants.dart`.
+> Could later let users adjust these via a "what bothers you most?"
+> preference screen. Activity-specific weights (running vs cycling)
+> are a future enhancement.
 
 ---
 
 ## Step 4: Select Top N Windows (Spacing)
 
-Naive "pick the top N scores" will cluster slots on the same sunny morning.
-We need to space them out.
+Naive "pick the top N scores" will cluster slots on the same sunny
+morning. We need to space them out.
 
 ### Greedy spaced selection
 
 ```
-Algorithm: GreedySpacedSelect(slots, n, minGapHours)
+Algorithm: GreedySpacedSelect(slots, n, minGapHours = 12)
   1. Sort slots by score descending.
   2. selected = []
   3. For each slot in sorted order:
        a. If selected.length == n, stop.
-       b. If no slot in selected is within minGapHours of this slot:
+       b. If no slot in selected is within 12 hours of this slot:
             Add to selected.
   4. Return selected sorted chronologically.
 ```
 
 ### Gap logic
 
-- Default minimum gap: **20 hours** (ensures different days or well-separated
-  morning/evening on the same day)
-- If N slots can't be found with 20h gap, relax progressively:
-  20h → 16h → 12h → 8h. This handles weeks with bad weather where you have
-  to double up.
+- Fixed minimum gap: **12 hours**.
+- If fewer than N slots can be found with the gap, return whatever was
+  selected (don't crash or pad).
 
-```dart
-List<Slot> selectSpaced(List<Slot> slots, int n, {int initialGap = 20}) {
-  var gap = initialGap;
-  while (gap >= 8) {
-    final result = _greedySelect(slots, n, gap);
-    if (result.length == n) return result;
-    gap -= 4;
-  }
-  // Fallback: just take the best N we could find
-  return _greedySelect(slots, n, 0).take(n).toList();
-}
-```
+> **Simplification from original spec:** The original algorithm used a
+> 20-hour initial gap with progressive relaxation (20 → 16 → 12 → 8).
+> The fixed 12-hour gap is simpler and still prevents morning/morning
+> clustering on the same day while allowing morning + evening on the
+> same day when weather is good.
 
 ### Edge cases
 
-- **Fewer than N good slots exist**: Return what you have with a message like
-  "Only found 2 good windows this week — the rest of the forecast looks rough."
-- **All slots below a minimum threshold**: Warn the user rather than suggesting
-  a terrible slot. Suggested minimum score: **0.3**.
-- **Ties**: Break ties by preferring the earlier slot (gives the user more
-  planning time).
+- **`numberOfRuns <= 0`** → return empty list.
+- **Empty `forecasts`** → return empty list.
+- **`runDurationMinutes` longer than available consecutive hours** →
+  those incomplete windows are skipped.
+- **Fewer than N good slots exist** → return what's available.
+- **All slots have terrible scores** → still return the least-bad
+  options (no minimum score threshold).
+- **Ties** → broken by sort order (earlier slots tend to appear first).
 
 ---
 
-## Suggested Improvements Beyond the Original Spec
+## Suggested Improvements (Not Yet Implemented)
 
-### 1. UV awareness
-For long sessions (60min+), flag slots with UV index >= 6 with a sun warning.
-Don't penalise the score (people can wear sunscreen) but surface it in the UI.
+### 1. Activity-specific scoring
+Different ideal ranges and weights for running vs cycling. The original
+spec had per-activity temperature ranges, wind thresholds, and humidity
+ceilings. Implement when the UI supports activity selection.
 
-### 2. "Golden hour" bonus
-Give a small bonus (+0.05) to early morning and evening slots when temperature
-is high. Running at 07:00 in summer is much better than 14:00 even if the
-hourly numbers look similar.
+### 2. Hard filters
+Reject hours with thunderstorms, extreme temperatures (< -10 °C or
+\> 38 °C), high wind gusts (> 50 km/h), or precipitation probability
+\> 80 % before scoring. Currently these are handled by low scores.
 
-### 3. Day-type awareness
-If the user links a calendar or marks rest days, skip those. Otherwise, lightly
-prefer weekends for longer sessions (e.g. a long run) since users likely have
-more flexibility.
+### 3. UV awareness
+For long sessions (60 min+), flag slots with UV index >= 6 with a sun
+warning. Don't penalise the score but surface it in the UI.
 
-### 4. Confidence decay
+### 4. "Golden hour" bonus
+Give a small bonus (+0.05) to early morning and evening slots when
+temperature is high. Running at 07:00 in summer is much better than
+14:00 even if the hourly numbers look similar.
+
+### 5. Day-type awareness
+If the user links a calendar or marks rest days, skip those. Otherwise,
+lightly prefer weekends for longer sessions.
+
+### 6. Confidence decay
 Weather forecasts are less accurate further out. Apply a small confidence
 multiplier that decays over the 7-day window:
 
@@ -244,10 +260,21 @@ confidence = 1.0 - (0.03 * hoursFromNow)
 adjusted_score = score * confidence
 ```
 
-This naturally favours nearer-term slots when scores are close, which is
-appropriate since those forecasts are more trustworthy.
+This naturally favours nearer-term slots when scores are close.
 
-### 5. Minimum score threshold
-Don't recommend a slot scoring below 0.3. If the week is that bad, tell the
-user honestly. A "no good windows found" is more useful than suggesting a run
-in sideways rain.
+### 7. Minimum score threshold
+Don't recommend a slot scoring below 0.3. If the week is that bad, tell
+the user honestly. Currently disabled — the algorithm always returns the
+best available slots regardless of absolute quality.
+
+### 8. Progressive gap relaxation
+Start with a 20-hour gap and relax to 16 → 12 → 8 if N slots can't be
+found. Currently uses a fixed 12-hour gap.
+
+### 9. Feels-like temperature
+Use feels-like temperature instead of raw temperature for scoring. Needs
+the API response and data model to include this field.
+
+### 10. Precipitation amount
+Factor in expected precipitation amount (mm) as a tiebreaker alongside
+probability. Needs the data model to include this field.
