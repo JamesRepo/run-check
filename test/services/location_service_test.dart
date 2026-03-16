@@ -243,6 +243,25 @@ void main() {
       });
     });
 
+    test('should remove the saved last location when clearing', () async {
+      final service = TestLocationService(
+        geolocatorPlatform: FakeGeolocatorPlatform(),
+        sharedPreferences: sharedPreferences,
+      );
+      await sharedPreferences.setString(
+        'last_location',
+        jsonEncode({
+          'latitude': 52.2405,
+          'longitude': -0.9027,
+          'displayName': 'Northampton, UK',
+        }),
+      );
+
+      await service.clearLastLocation();
+
+      expect(sharedPreferences.getString('last_location'), isNull);
+    });
+
     test(
       'should return null when loading the last location and nothing is saved',
       () async {

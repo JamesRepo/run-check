@@ -91,6 +91,11 @@ class LocationService {
     );
   }
 
+  Future<void> clearLastLocation() async {
+    final preferences = await _getSharedPreferences();
+    await preferences.remove(_lastLocationKey);
+  }
+
   Future<LocationData?> loadLastLocation() async {
     final preferences = await _getSharedPreferences();
     final savedLocation = preferences.getString(_lastLocationKey);
