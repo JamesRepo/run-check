@@ -1,22 +1,24 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:run_check/app.dart';
+import 'package:run_check/providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
-}
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  await Hive.initFlutter();
+  final sharedPreferences = await SharedPreferences.getInstance();
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Run Check',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
-      home: const Scaffold(body: Center(child: Text('Run Check'))),
-    );
-  }
+  runApp(
+    ProviderScope(
+      overrides: <Override>[
+        sharedPreferencesLoaderProvider.overrideWithValue(
+          () => Future<SharedPreferences>.value(sharedPreferences),
+        ),
+      ],
+      child: const RunCastApp(),
+    ),
+  );
 }
