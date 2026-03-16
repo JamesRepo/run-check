@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:run_check/app.dart';
 import 'package:run_check/utils/theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   group('[Widget] RunCastApp', () {
     testWidgets('should render the home route when built', (
       WidgetTester tester,
@@ -12,7 +17,7 @@ void main() {
       await tester.pumpWidget(const ProviderScope(child: RunCastApp()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('RunCheck'), findsOneWidget);
     });
 
     testWidgets('should configure a MaterialApp when built', (
@@ -44,7 +49,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Scaffold), findsOneWidget);
-      expect(find.byType(Center), findsOneWidget);
+      expect(find.text('Tap to set your location'), findsOneWidget);
     });
   });
 }

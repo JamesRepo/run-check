@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:run_check/app.dart';
 import 'package:run_check/utils/router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   group('[Unit] goRouterProvider', () {
     test('should return the same router instance when read multiple times', () {
       final container = ProviderContainer();
@@ -33,9 +38,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('RunCheck'), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
-      expect(find.byType(Center), findsOneWidget);
+      expect(find.text('Tap to set your location'), findsOneWidget);
     });
 
     testWidgets(
