@@ -38,5 +38,42 @@ void main() {
         expect(totalWeight, closeTo(1.0, 0.000001));
       },
     );
+
+    test('should expose weather descriptions for common wmo weather codes',
+        () {
+      expect(weatherCodeDescriptions[0], 'Clear sky');
+      expect(weatherCodeDescriptions[2], 'Partly cloudy');
+      expect(weatherCodeDescriptions[61], 'Slight rain');
+      expect(weatherCodeDescriptions[95], 'Thunderstorm');
+    });
+
+    test('should include descriptions for every required weather code', () {
+      expect(
+        weatherCodeDescriptions.keys,
+        containsAll([
+          0,
+          1,
+          2,
+          3,
+          45,
+          48,
+          51,
+          53,
+          55,
+          61,
+          63,
+          65,
+          71,
+          73,
+          75,
+          80,
+          81,
+          82,
+          95,
+          96,
+          99,
+        ]),
+      );
+    });
   });
 }
