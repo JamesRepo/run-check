@@ -37,7 +37,14 @@ class HourlyForecast {
     };
   }
 
-  static double _parseDouble(Object? value) {
+  static double _parseDouble(
+    Object? value, {
+    double defaultValue = 0,
+  }) {
+    if (value == null) {
+      return defaultValue;
+    }
+
     if (value case final num numericValue) {
       return numericValue.toDouble();
     }
@@ -45,7 +52,14 @@ class HourlyForecast {
     throw FormatException('Expected numeric value, got: $value');
   }
 
-  static int _parseInt(Object? value) {
+  static int _parseInt(
+    Object? value, {
+    int defaultValue = 0,
+  }) {
+    if (value == null) {
+      return defaultValue;
+    }
+
     if (value case final num numericValue) {
       return numericValue.toInt();
     }

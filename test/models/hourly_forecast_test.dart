@@ -79,18 +79,21 @@ void main() {
       },
     );
 
-    test('should throw a FormatException when a numeric field is null', () {
-      expect(
-        () => HourlyForecast.fromJson({
-          'time': '2026-03-16T13:00',
-          'temperature_2m': 11,
-          'precipitation_probability': null,
-          'windspeed_10m': 8.5,
-          'relativehumidity_2m': 60,
-          'weathercode': 0,
-        }),
-        throwsA(isA<FormatException>()),
-      );
+    test('should default numeric fields to zero when api values are null', () {
+      final forecast = HourlyForecast.fromJson({
+        'time': '2026-03-16T13:00',
+        'temperature_2m': null,
+        'precipitation_probability': null,
+        'windspeed_10m': null,
+        'relativehumidity_2m': null,
+        'weathercode': null,
+      });
+
+      expect(forecast.temperature, 0);
+      expect(forecast.precipitationProbability, 0);
+      expect(forecast.windSpeed, 0);
+      expect(forecast.humidity, 0);
+      expect(forecast.weatherCode, 0);
     });
 
     test(
