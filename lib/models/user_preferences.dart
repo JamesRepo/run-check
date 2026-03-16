@@ -2,9 +2,12 @@ class UserPreferences {
   UserPreferences({
     this.unit = TemperatureUnit.celsius,
     List<String> preferredPeriods = defaultPreferredPeriods,
-    this.runDurationMinutes = 60,
+    int runDurationMinutes = defaultRunDurationMinutes,
     this.cyclistMode = false,
-  }) : preferredPeriods = List<String>.unmodifiable(preferredPeriods);
+  }) : preferredPeriods = List<String>.unmodifiable(
+         _normalizePreferredPeriods(preferredPeriods),
+       ),
+       runDurationMinutes = _normalizeRunDuration(runDurationMinutes);
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
     final periods = json['preferredPeriods'] as List<dynamic>?;
@@ -14,7 +17,8 @@ class UserPreferences {
       preferredPeriods: periods == null
           ? defaultPreferredPeriods
           : periods.whereType<String>().toList(growable: false),
-      runDurationMinutes: _parseInt(json['runDurationMinutes']) ?? 60,
+      runDurationMinutes:
+          _parseInt(json['runDurationMinutes']) ?? defaultRunDurationMinutes,
       cyclistMode: json['cyclistMode'] as bool? ?? false,
     );
   }
@@ -29,6 +33,8 @@ class UserPreferences {
     'afternoon',
     'evening',
   ];
+  static const supportedRunDurations = <int>[30, 45, 60, 90];
+  static const defaultRunDurationMinutes = 60;
 
   static const _sentinel = Object();
 
@@ -63,6 +69,26 @@ class UserPreferences {
     }
 
     return null;
+  }
+
+  static List<String> _normalizePreferredPeriods(List<String> periods) {
+    final normalizedPeriods = defaultPreferredPeriods
+        .where(periods.contains)
+        .toList(growable: false);
+
+    if (normalizedPeriods.isEmpty) {
+      return defaultPreferredPeriods;
+    }
+
+    return normalizedPeriods;
+  }
+
+  static int _normalizeRunDuration(int runDurationMinutes) {
+    if (supportedRunDurations.contains(runDurationMinutes)) {
+      return runDurationMinutes;
+    }
+
+    return defaultRunDurationMinutes;
   }
 }
 

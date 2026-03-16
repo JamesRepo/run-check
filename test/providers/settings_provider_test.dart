@@ -54,6 +54,33 @@ void main() {
       },
     );
 
+    test('should normalize invalid persisted periods and duration '
+        'when saved values are unsupported', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'user_preferences': jsonEncode({
+          'unit': 'fahrenheit',
+          'preferredPeriods': <String>['night', 'overnight'],
+          'runDurationMinutes': 75,
+          'cyclistMode': true,
+        }),
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(settingsProvider);
+      await flushAsyncWork();
+
+      final state = container.read(settingsProvider);
+      expect(state.unit, TemperatureUnit.fahrenheit);
+      expect(state.preferredPeriods, UserPreferences.defaultPreferredPeriods);
+      expect(
+        state.runDurationMinutes,
+        UserPreferences.defaultRunDurationMinutes,
+      );
+      expect(state.cyclistMode, isTrue);
+    });
+
     test(
       'should update the unit and persist it when setUnit is called',
       () async {
