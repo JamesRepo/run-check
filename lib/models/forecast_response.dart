@@ -6,9 +6,15 @@ class ForecastResponse {
     required this.longitude,
     required this.timezone,
     required this.hourlyForecasts,
+    required this.sunrises,
+    required this.sunsets,
+    this.isStale = false,
   });
 
-  factory ForecastResponse.fromJson(Map<String, dynamic> json) {
+  factory ForecastResponse.fromJson(
+    Map<String, dynamic> json, {
+    bool isStale = false,
+  }) {
     final hourly = json['hourly'] as Map<String, dynamic>;
 
     final times = (hourly['time'] as List<dynamic>).cast<String>();
@@ -39,11 +45,24 @@ class ForecastResponse {
       });
     });
 
+    final daily = json['daily'] as Map<String, dynamic>?;
+    final sunrises = (daily?['sunrise'] as List<dynamic>?)
+            ?.map((e) => DateTime.parse(e as String))
+            .toList() ??
+        [];
+    final sunsets = (daily?['sunset'] as List<dynamic>?)
+            ?.map((e) => DateTime.parse(e as String))
+            .toList() ??
+        [];
+
     return ForecastResponse(
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
       timezone: json['timezone'] as String,
       hourlyForecasts: hourlyForecasts,
+      sunrises: sunrises,
+      sunsets: sunsets,
+      isStale: isStale,
     );
   }
 
@@ -51,6 +70,21 @@ class ForecastResponse {
   final double longitude;
   final String timezone;
   final List<HourlyForecast> hourlyForecasts;
+  final List<DateTime> sunrises;
+  final List<DateTime> sunsets;
+  final bool isStale;
+
+  ForecastResponse copyWith({bool? isStale}) {
+    return ForecastResponse(
+      latitude: latitude,
+      longitude: longitude,
+      timezone: timezone,
+      hourlyForecasts: hourlyForecasts,
+      sunrises: sunrises,
+      sunsets: sunsets,
+      isStale: isStale ?? this.isStale,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -76,6 +110,12 @@ class ForecastResponse {
         'weathercode': hourlyForecasts
             .map((forecast) => forecast.weatherCode)
             .toList(),
+      },
+      'daily': {
+        'sunrise':
+            sunrises.map((dt) => dt.toIso8601String()).toList(),
+        'sunset':
+            sunsets.map((dt) => dt.toIso8601String()).toList(),
       },
     };
   }
