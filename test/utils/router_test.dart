@@ -61,7 +61,7 @@ void main() {
         router.go('/results');
         await tester.pumpAndSettle();
 
-        expect(find.text('Results'), findsOneWidget);
+        expect(find.text('Your Best Runs'), findsOneWidget);
         expect(find.byType(SlideTransition), findsWidgets);
       },
     );
@@ -108,7 +108,7 @@ void main() {
         }
 
         await pumpRoute('/results');
-        expect(find.text('Results'), findsOneWidget);
+        expect(find.text('Your Best Runs'), findsOneWidget);
 
         await pumpRoute('/settings');
         expect(find.text('Settings'), findsOneWidget);
