@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:run_check/models/forecast_response.dart';
 import 'package:run_check/models/hourly_forecast.dart';
+import 'package:run_check/models/sunrise_sunset.dart';
 
 void main() {
   group('[Unit] ForecastResponse', () {
@@ -124,6 +125,7 @@ void main() {
           'weathercode': [3, 2],
         },
         'daily': {
+          'time': <String>[],
           'sunrise': <String>[],
           'sunset': <String>[],
         },
@@ -184,11 +186,15 @@ void main() {
           'weathercode': [3],
         },
         'daily': {
+          'time': ['2026-03-16', '2026-03-17'],
           'sunrise': ['2026-03-16T06:15', '2026-03-17T06:13'],
           'sunset': ['2026-03-16T18:10', '2026-03-17T18:12'],
         },
       });
 
+      expect(response.dailySunData, hasLength(2));
+      expect(response.dailySunData.first.date, DateTime.parse('2026-03-16'));
+      expect(response.dailySunData.last.date, DateTime.parse('2026-03-17'));
       expect(response.sunrises, hasLength(2));
       expect(response.sunrises.first, DateTime.parse('2026-03-16T06:15'));
       expect(response.sunrises.last, DateTime.parse('2026-03-17T06:13'));
@@ -198,7 +204,7 @@ void main() {
     });
 
     test(
-      'should default sunrises and sunsets to empty lists '
+      'should default daily sun data to empty lists '
       'when daily key is missing',
       () {
         final response = ForecastResponse.fromJson({
@@ -215,10 +221,36 @@ void main() {
           },
         });
 
+        expect(response.dailySunData, isEmpty);
         expect(response.sunrises, isEmpty);
         expect(response.sunsets, isEmpty);
       },
     );
+
+    test('should zip daily arrays using the shortest length '
+        'when daily arrays are mismatched', () {
+      final response = ForecastResponse.fromJson({
+        'latitude': 51.5,
+        'longitude': -0.13,
+        'timezone': 'Europe/London',
+        'hourly': {
+          'time': ['2026-03-16T09:00'],
+          'temperature_2m': [12.4],
+          'precipitation_probability': [30],
+          'windspeed_10m': [16.5],
+          'relativehumidity_2m': [65],
+          'weathercode': [3],
+        },
+        'daily': {
+          'time': ['2026-03-16', '2026-03-17', '2026-03-18'],
+          'sunrise': ['2026-03-16T06:15', '2026-03-17T06:13'],
+          'sunset': ['2026-03-16T18:10'],
+        },
+      });
+
+      expect(response.dailySunData, hasLength(1));
+      expect(response.dailySunData.single.date, DateTime.parse('2026-03-16'));
+    });
 
     test('should default isStale to false when parsed from json', () {
       final response = ForecastResponse.fromJson({
@@ -286,7 +318,7 @@ void main() {
     test(
       'should keep original isStale when copyWith is called without arguments',
       () {
-        const original = ForecastResponse(
+        final original = ForecastResponse(
           latitude: 51.5,
           longitude: -0.13,
           timezone: 'Europe/London',
@@ -318,10 +350,87 @@ void main() {
         final json = response.toJson();
         final daily = json['daily'] as Map<String, dynamic>;
 
+        expect(daily['time'], ['2026-03-16T00:00:00.000']);
         expect(daily['sunrise'], ['2026-03-16T06:15:00.000']);
         expect(daily['sunset'], ['2026-03-16T18:10:00.000']);
       },
     );
+
+    test('should preserve provided daily sun data when built directly', () {
+      final response = ForecastResponse(
+        latitude: 51.5,
+        longitude: -0.13,
+        timezone: 'Europe/London',
+        hourlyForecasts: const [],
+        dailySunData: [
+          SunriseSunset(
+            date: DateTime.parse('2026-03-16'),
+            sunrise: DateTime.parse('2026-03-16T06:15:00.000'),
+            sunset: DateTime.parse('2026-03-16T18:10:00.000'),
+          ),
+        ],
+      );
+
+      expect(response.sunrises, [DateTime.parse('2026-03-16T06:15:00.000')]);
+      expect(response.sunsets, [DateTime.parse('2026-03-16T18:10:00.000')]);
+      expect(response.toJson()['daily'], {
+        'time': ['2026-03-16T00:00:00.000'],
+        'sunrise': ['2026-03-16T06:15:00.000'],
+        'sunset': ['2026-03-16T18:10:00.000'],
+      });
+    });
+
+    test('should normalize legacy sunrises and sunsets into daily sun data '
+        'when built directly', () {
+      final response = ForecastResponse(
+        latitude: 51.5,
+        longitude: -0.13,
+        timezone: 'Europe/London',
+        sunrises: [
+          DateTime.parse('2026-03-16T06:15:00.000'),
+          DateTime.parse('2026-03-17T06:13:00.000'),
+        ],
+        sunsets: [
+          DateTime.parse('2026-03-16T18:10:00.000'),
+          DateTime.parse('2026-03-17T18:12:00.000'),
+        ],
+        hourlyForecasts: const [],
+      );
+
+      expect(response.dailySunData, hasLength(2));
+      expect(response.dailySunData.first.date, DateTime.parse('2026-03-16'));
+      expect(response.sunrises, [
+        DateTime.parse('2026-03-16T06:15:00.000'),
+        DateTime.parse('2026-03-17T06:13:00.000'),
+      ]);
+      expect(response.toJson()['daily'], {
+        'time': ['2026-03-16T00:00:00.000', '2026-03-17T00:00:00.000'],
+        'sunrise': ['2026-03-16T06:15:00.000', '2026-03-17T06:13:00.000'],
+        'sunset': ['2026-03-16T18:10:00.000', '2026-03-17T18:12:00.000'],
+      });
+    });
+
+    test('should assert when both dailySunData and legacy sunrise lists are '
+        'provided to the constructor', () {
+      expect(
+        () => ForecastResponse(
+          latitude: 51.5,
+          longitude: -0.13,
+          timezone: 'Europe/London',
+          hourlyForecasts: const [],
+          dailySunData: [
+            SunriseSunset(
+              date: DateTime.parse('2026-03-16'),
+              sunrise: DateTime.parse('2026-03-16T06:15:00.000'),
+              sunset: DateTime.parse('2026-03-16T18:10:00.000'),
+            ),
+          ],
+          sunrises: [DateTime.parse('2026-03-17T06:13:00.000')],
+          sunsets: [DateTime.parse('2026-03-17T18:12:00.000')],
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
 
     test(
       'should survive a round trip through toJson and fromJson '
