@@ -16,6 +16,7 @@ import 'package:run_check/screens/home_screen.dart';
 import 'package:run_check/services/location_service.dart';
 import 'package:run_check/services/run_scheduler.dart';
 import 'package:run_check/services/weather_service.dart';
+import 'package:run_check/utils/app_colors.dart';
 import 'package:run_check/utils/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,6 +59,21 @@ void main() {
       );
     });
 
+    testWidgets(
+      'should render the location section with the surface container styling',
+      (WidgetTester tester) async {
+        await _pumpHomeScreen(tester);
+
+        final ink = tester.widget<Ink>(
+          find.descendant(of: find.byType(InkWell), matching: find.byType(Ink)),
+        );
+        final decoration = ink.decoration! as BoxDecoration;
+
+        expect(find.text('LOCATION'), findsOneWidget);
+        expect(decoration.color, AppColors.surfaceContainerLow);
+      },
+    );
+
     testWidgets('should render the saved location when one is available', (
       WidgetTester tester,
     ) async {
@@ -83,10 +99,7 @@ void main() {
 
         expect(find.text('Set your location'), findsOneWidget);
         expect(find.text('Use my current location'), findsOneWidget);
-        expect(
-          find.widgetWithText(TextFormField, 'Search city'),
-          findsOneWidget,
-        );
+        expect(find.text('SEARCH CITY'), findsOneWidget);
       },
     );
 

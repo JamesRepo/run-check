@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:run_check/models/user_preferences.dart';
 import 'package:run_check/providers/settings_provider.dart';
 import 'package:run_check/screens/settings_screen.dart';
+import 'package:run_check/utils/app_colors.dart';
 import 'package:run_check/utils/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,18 +24,24 @@ void main() {
 
         expect(find.text('Settings'), findsOneWidget);
         expect(find.byTooltip('Back'), findsOneWidget);
-        expect(find.text('Preferences'), findsOneWidget);
+        expect(find.text('PREFERENCES'), findsOneWidget);
         expect(find.text('Temperature Unit'), findsOneWidget);
         expect(find.text('Preferred time of day'), findsOneWidget);
         expect(find.text('Typical Run Duration'), findsOneWidget);
-        expect(find.text('Cyclist Mode'), findsOneWidget);
         await tester.scrollUntilVisible(
-          find.text('About'),
+          find.text('Cyclist Mode'),
           200,
           scrollable: find.byType(Scrollable),
         );
         await tester.pumpAndSettle();
-        expect(find.text('About'), findsOneWidget);
+        expect(find.text('Cyclist Mode'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('ABOUT'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('ABOUT'), findsOneWidget);
         expect(find.text('Version 1.0.0'), findsOneWidget);
         expect(find.text('Privacy Policy'), findsOneWidget);
         expect(container.read(settingsProvider).unit, TemperatureUnit.celsius);
@@ -53,39 +60,34 @@ void main() {
           }),
         });
 
-        await _pumpSettingsScreen(tester);
+        final container = await _pumpSettingsScreen(tester);
+        final chips = tester
+            .widgetList<FilterChip>(find.byType(FilterChip))
+            .toList();
+        final morningChip = chips[0];
+        final afternoonChip = chips[1];
+        final eveningChip = chips[2];
+        await tester.scrollUntilVisible(
+          find.byType(SwitchListTile),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
 
-        final unitControl = tester.widget<SegmentedButton<TemperatureUnit>>(
-          find
-              .byWidgetPredicate(
-                (Widget widget) => widget is SegmentedButton<TemperatureUnit>,
-              )
-              .first,
-        );
-        final durationControl = tester.widget<SegmentedButton<int>>(
-          find
-              .byWidgetPredicate(
-                (Widget widget) => widget is SegmentedButton<int>,
-              )
-              .first,
-        );
         final switchTile = tester.widget<SwitchListTile>(
           find.byType(SwitchListTile),
         );
-        final afternoonChip = tester.widget<FilterChip>(
-          find.widgetWithText(FilterChip, 'Afternoon (12pm-6pm)'),
-        );
-        final eveningChip = tester.widget<FilterChip>(
-          find.widgetWithText(FilterChip, 'Evening (6pm-9pm)'),
-        );
-        final morningChip = tester.widget<FilterChip>(
-          find.widgetWithText(FilterChip, 'Morning (5am-12pm)'),
-        );
 
-        expect(unitControl.selected, <TemperatureUnit>{
+        expect(
+          container.read(settingsProvider).unit,
           TemperatureUnit.fahrenheit,
-        });
-        expect(durationControl.selected, <int>{90});
+        );
+        expect(container.read(settingsProvider).runDurationMinutes, 90);
+        expect(container.read(settingsProvider).preferredPeriods, <String>[
+          'afternoon',
+          'evening',
+        ]);
+        expect(container.read(settingsProvider).cyclistMode, isTrue);
         expect(switchTile.value, isTrue);
         expect(afternoonChip.selected, isTrue);
         expect(eveningChip.selected, isTrue);
@@ -221,6 +223,12 @@ void main() {
       (WidgetTester tester) async {
         final container = await _pumpSettingsScreen(tester);
 
+        await tester.scrollUntilVisible(
+          find.text('45 min'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.text('45 min'));
         await tester.pumpAndSettle();
 
@@ -233,6 +241,12 @@ void main() {
     ) async {
       final container = await _pumpSettingsScreen(tester);
 
+      await tester.scrollUntilVisible(
+        find.text('Cyclist Mode'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Cyclist Mode'));
       await tester.pumpAndSettle();
 
@@ -245,6 +259,34 @@ void main() {
         containsPair('cyclistMode', true),
       );
     });
+
+    testWidgets(
+      'should render the cyclist mode group on the lowest surface container',
+      (WidgetTester tester) async {
+        await _pumpSettingsScreen(tester);
+        await tester.scrollUntilVisible(
+          find.text('Cyclist Mode'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        final containerWidget = tester.widget<Container>(
+          find.byWidgetPredicate((Widget widget) {
+            if (widget is! Container) {
+              return false;
+            }
+
+            final decoration = widget.decoration;
+            return decoration is BoxDecoration &&
+                decoration.color == AppColors.surfaceContainerLowest;
+          }).first,
+        );
+        final decoration = containerWidget.decoration! as BoxDecoration;
+
+        expect(decoration.color, AppColors.surfaceContainerLowest);
+      },
+    );
 
     testWidgets(
       'should show a snackbar when the privacy policy tile is tapped',

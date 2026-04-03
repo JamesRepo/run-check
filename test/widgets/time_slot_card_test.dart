@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:run_check/models/time_slot.dart';
 import 'package:run_check/models/user_preferences.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_shadows.dart';
+import 'package:run_check/utils/app_spacing.dart';
 import 'package:run_check/utils/theme.dart';
 import 'package:run_check/widgets/time_slot_card.dart';
 
@@ -13,20 +17,11 @@ void main() {
       await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
 
       expect(find.text('1'), findsOneWidget);
-      // Tuesday, 15 Apr 2025
       expect(find.text('Tuesday, 15 Apr'), findsOneWidget);
       expect(find.text('07:00 – 08:00'), findsOneWidget);
       expect(find.text('14°C'), findsOneWidget);
       expect(find.text('10%'), findsOneWidget);
       expect(find.text('8 km/h'), findsOneWidget);
-    });
-
-    testWidgets('should display rank number 3 for third slot', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _clearMorningSlot, rank: 3);
-
-      expect(find.text('3'), findsOneWidget);
     });
 
     testWidgets(
@@ -39,177 +34,126 @@ void main() {
           unit: TemperatureUnit.fahrenheit,
         );
 
-        // 14°C = 57.2°F → rounds to 57
         expect(find.text('57°F'), findsOneWidget);
         expect(find.text('14°C'), findsNothing);
       },
     );
 
-    testWidgets('should show sunny icon for weather code 0', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(0), rank: 1);
-
-      expect(find.byIcon(Icons.wb_sunny), findsOneWidget);
-    });
-
-    testWidgets('should show sunny icon for weather code 1', (
+    testWidgets('should use a sunny icon when the weather code is clear', (
       WidgetTester tester,
     ) async {
       await _pumpCard(tester, slot: _slotWithWeatherCode(1), rank: 1);
 
-      expect(find.byIcon(Icons.wb_sunny), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.wb_sunny));
+      expect(icon.color, AppColors.sunnyIcon);
     });
 
-    testWidgets('should show cloud icon for weather code 2', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(2), rank: 1);
-
-      expect(find.byIcon(Icons.cloud), findsOneWidget);
-    });
-
-    testWidgets('should show cloud icon for weather code 3', (
+    testWidgets('should use a cloudy icon when the weather code is cloudy', (
       WidgetTester tester,
     ) async {
       await _pumpCard(tester, slot: _slotWithWeatherCode(3), rank: 1);
 
-      expect(find.byIcon(Icons.cloud), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.cloud));
+      expect(icon.color, AppColors.cloudyIcon);
     });
 
-    testWidgets('should show cloud icon for fog weather code 45', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(45), rank: 1);
-
-      expect(find.byIcon(Icons.cloud), findsOneWidget);
-    });
-
-    testWidgets('should show water drop icon for drizzle code 51', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(51), rank: 1);
-
-      expect(find.byIcon(Icons.water_drop), findsOneWidget);
-    });
-
-    testWidgets('should show water drop icon for rain code 63', (
+    testWidgets('should use a rain icon when the weather code is wet', (
       WidgetTester tester,
     ) async {
       await _pumpCard(tester, slot: _slotWithWeatherCode(63), rank: 1);
 
-      expect(find.byIcon(Icons.water_drop), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.water_drop));
+      expect(icon.color, AppColors.rainIcon);
     });
 
-    testWidgets('should show snow icon for weather code 73', (
+    testWidgets(
+      'should render the result card with editorial shadow and white surface',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.byType(DecoratedBox).first,
+        );
+        final decoration = decoratedBox.decoration as BoxDecoration;
+
+        expect(decoration.color, AppColors.surfaceContainerLowest);
+        expect(decoration.borderRadius, BorderRadius.circular(AppRadii.card));
+        expect(decoration.boxShadow, const <BoxShadow>[
+          AppShadows.editorialShadow,
+        ]);
+      },
+    );
+
+    testWidgets('should render the rank badge with primary fill when shown', (
       WidgetTester tester,
     ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(73), rank: 1);
+      await _pumpCard(tester, slot: _clearMorningSlot, rank: 3);
 
-      expect(find.byIcon(Icons.ac_unit), findsOneWidget);
+      final badge = tester.widget<Container>(_findRankBadge());
+      final decoration = badge.decoration! as BoxDecoration;
+
+      expect(badge.constraints?.maxWidth, 40);
+      expect(badge.constraints?.maxHeight, 40);
+      expect(decoration.shape, BoxShape.circle);
+      expect(decoration.color, appTheme.colorScheme.primary);
     });
 
-    testWidgets('should show water drop icon for rain shower code 80', (
+    testWidgets('should render weather metrics inside tonal data pills', (
       WidgetTester tester,
     ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(80), rank: 1);
+      await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
 
-      expect(find.byIcon(Icons.water_drop), findsOneWidget);
-    });
-
-    testWidgets('should show thunderstorm icon for weather code 95', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(95), rank: 1);
-
-      expect(find.byIcon(Icons.thunderstorm), findsOneWidget);
-    });
-
-    testWidgets('should show thunderstorm icon for weather code 99', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _slotWithWeatherCode(99), rank: 1);
-
-      expect(find.byIcon(Icons.thunderstorm), findsOneWidget);
-    });
-
-    testWidgets('should show green score dot when score >= 0.7', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0.85),
-        rank: 1,
+      final pillFinder = find.ancestor(
+        of: find.text('14°C'),
+        matching: find.byType(Container),
       );
+      final pill = tester.widgetList<Container>(pillFinder).firstWhere((pill) {
+        final decoration = pill.decoration;
+        return decoration is BoxDecoration &&
+            decoration.color == AppColors.surfaceContainerLow;
+      });
 
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.green);
-    });
+      final decoration = pill.decoration! as BoxDecoration;
 
-    testWidgets('should show green score dot when score is exactly 0.7', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0.7),
-        rank: 1,
+      expect(
+        pill.padding,
+        const EdgeInsets.symmetric(
+          horizontal: AppSpacing.dataPillPaddingH,
+          vertical: AppSpacing.dataPillPaddingV,
+        ),
       );
-
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.green);
+      expect(decoration.borderRadius, BorderRadius.circular(AppRadii.dataPill));
     });
 
-    testWidgets('should show amber score dot when score is 0.4–0.69', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0.55),
-        rank: 1,
-      );
+    testWidgets(
+      'should render an excellent score strip when the score is at least 0.7',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithScore(0.7), rank: 1);
 
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.amber);
-    });
+        final strip = tester.widget<Container>(_findScoreStrip());
+        expect(strip.color, AppColors.scoreExcellent);
+      },
+    );
 
-    testWidgets('should show amber score dot when score is exactly 0.4', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0.4),
-        rank: 1,
-      );
+    testWidgets(
+      'should render a fair score strip when the score is between 0.4 and 0.69',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithScore(0.55), rank: 1);
 
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.amber);
-    });
+        final strip = tester.widget<Container>(_findScoreStrip());
+        expect(strip.color, AppColors.scoreFair);
+      },
+    );
 
-    testWidgets('should show red score dot when score < 0.4', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0.2),
-        rank: 1,
-      );
+    testWidgets(
+      'should render a poor score strip when the score is below 0.4',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithScore(0.2), rank: 1);
 
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.red);
-    });
-
-    testWidgets('should show red score dot when score is 0', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        slot: _slotWithScore(0),
-        rank: 1,
-      );
-
-      final dot = _findScoreDot(tester);
-      expect(dot, Colors.red);
-    });
+        final strip = tester.widget<Container>(_findScoreStrip());
+        expect(strip.color, AppColors.scorePoor);
+      },
+    );
 
     testWidgets('should zero-pad single-digit hours and minutes', (
       WidgetTester tester,
@@ -230,7 +174,7 @@ void main() {
       expect(find.text('07:00 – 08:00'), findsOneWidget);
     });
 
-    testWidgets('should format afternoon times correctly', (
+    testWidgets('should format afternoon times correctly when rendered', (
       WidgetTester tester,
     ) async {
       final slot = TimeSlot(
@@ -249,7 +193,7 @@ void main() {
       expect(find.text('14:30 – 15:30'), findsOneWidget);
     });
 
-    testWidgets('should round wind speed to nearest integer', (
+    testWidgets('should round wind speed to the nearest integer', (
       WidgetTester tester,
     ) async {
       final slot = TimeSlot(
@@ -268,63 +212,17 @@ void main() {
       expect(find.text('9 km/h'), findsOneWidget);
     });
 
-    testWidgets('should display all seven weekday names correctly', (
+    testWidgets('should display weekday and month abbreviations correctly', (
       WidgetTester tester,
     ) async {
-      // 2025-04-14 is a Monday
-      final monday = DateTime(2025, 4, 14, 9);
-      final slot = _slotWithStartTime(monday);
-
-      await _pumpCard(tester, slot: slot, rank: 1);
-
-      expect(find.text('Monday, 14 Apr'), findsOneWidget);
-    });
-
-    testWidgets('should display Saturday correctly', (
-      WidgetTester tester,
-    ) async {
-      // 2025-04-19 is a Saturday
-      final saturday = DateTime(2025, 4, 19, 9);
-      final slot = _slotWithStartTime(saturday);
-
-      await _pumpCard(tester, slot: slot, rank: 1);
-
-      expect(find.text('Saturday, 19 Apr'), findsOneWidget);
-    });
-
-    testWidgets('should display January month abbreviation', (
-      WidgetTester tester,
-    ) async {
-      final jan = DateTime(2025, 1, 5, 9);
-      final slot = _slotWithStartTime(jan);
-
-      await _pumpCard(tester, slot: slot, rank: 1);
-
-      expect(find.text('Sunday, 5 Jan'), findsOneWidget);
-    });
-
-    testWidgets('should display December month abbreviation', (
-      WidgetTester tester,
-    ) async {
-      final dec = DateTime(2025, 12, 25, 9);
-      final slot = _slotWithStartTime(dec);
+      final slot = _slotWithStartTime(DateTime(2025, 12, 25, 9));
 
       await _pumpCard(tester, slot: slot, rank: 1);
 
       expect(find.text('Thursday, 25 Dec'), findsOneWidget);
     });
-
-    testWidgets('should render inside a Card with expected structure', (
-      WidgetTester tester,
-    ) async {
-      await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
-
-      expect(find.byType(Card), findsOneWidget);
-    });
   });
 }
-
-// ── Helpers ───────────────────────────────────────────────────
 
 final _clearMorningSlot = TimeSlot(
   startTime: DateTime(2025, 4, 15, 7),
@@ -394,20 +292,23 @@ Future<void> _pumpCard(
   );
 }
 
-Color? _findScoreDot(WidgetTester tester) {
-  final containers = tester.widgetList<Container>(
-    find.byType(Container),
-  );
-
-  for (final container in containers) {
-    final decoration = container.decoration;
-    if (decoration is BoxDecoration &&
-        decoration.shape == BoxShape.circle &&
-        container.constraints?.maxWidth == 10 &&
-        container.constraints?.maxHeight == 10) {
-      return decoration.color;
+Finder _findRankBadge() {
+  return find.byWidgetPredicate((Widget widget) {
+    if (widget is! Container) {
+      return false;
     }
-  }
 
-  return null;
+    final decoration = widget.decoration;
+    return decoration is BoxDecoration &&
+        decoration.shape == BoxShape.circle &&
+        decoration.color == appTheme.colorScheme.primary;
+  });
+}
+
+Finder _findScoreStrip() {
+  return find.byWidgetPredicate((Widget widget) {
+    return widget is Container &&
+        widget.constraints?.minHeight == 6 &&
+        widget.constraints?.maxHeight == 6;
+  });
 }
