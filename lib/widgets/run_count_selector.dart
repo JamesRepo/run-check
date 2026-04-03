@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:run_check/utils/app_colors.dart';
-import 'package:run_check/utils/app_radii.dart';
-import 'package:run_check/utils/app_spacing.dart';
 
-class RunCountSelector extends StatefulWidget {
+class RunCountSelector extends StatelessWidget {
   const RunCountSelector({
     required this.selectedCount,
     required this.onSelected,
@@ -14,95 +12,72 @@ class RunCountSelector extends StatefulWidget {
   final ValueChanged<int> onSelected;
 
   @override
-  State<RunCountSelector> createState() => _RunCountSelectorState();
-}
-
-class _RunCountSelectorState extends State<RunCountSelector> {
-  late FixedExtentScrollController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = FixedExtentScrollController(
-      initialItem: widget.selectedCount - 1,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant RunCountSelector oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedCount != widget.selectedCount) {
-      _controller.jumpToItem(widget.selectedCount - 1);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final outerSize = ((screenWidth - 40) / 7).clamp(40.0, 48.0);
+    final innerSize = (outerSize - 4).clamp(36.0, 44.0);
 
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          Positioned.fill(
-            child: IgnorePointer(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List<Widget>.generate(7, (int index) {
+        final value = index + 1;
+        final isSelected = value == selectedCount;
+
+        return SizedBox(
+          width: outerSize,
+          height: 48,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onSelected(value),
+              customBorder: const CircleBorder(),
               child: Center(
-                child: Container(
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.dataPillPaddingH,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(AppRadii.dataPill),
+                child: AnimatedScale(
+                  scale: isSelected ? 1.1 : 1,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    width: innerSize,
+                    height: innerSize,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primaryContainer
+                          : AppColors.surfaceContainerLowest,
+                      shape: BoxShape.circle,
+                      boxShadow: isSelected
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: colorScheme.primaryContainer.withValues(
+                                  alpha: 0.2,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$value',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          ListWheelScrollView.useDelegate(
-            controller: _controller,
-            itemExtent: 40,
-            diameterRatio: 1.6,
-            physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: (int index) => widget.onSelected(index + 1),
-            childDelegate: ListWheelChildBuilderDelegate(
-              childCount: 7,
-              builder: (BuildContext context, int index) {
-                if (index < 0 || index > 6) {
-                  return null;
-                }
-
-                final value = index + 1;
-                final isSelected = value == widget.selectedCount;
-
-                return Center(
-                  child: Text(
-                    '$value',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: isSelected
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 }

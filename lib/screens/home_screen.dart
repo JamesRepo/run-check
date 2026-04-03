@@ -32,88 +32,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'RunCheck',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: colorScheme.primary,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.location_on, color: colorScheme.primaryContainer),
+            const SizedBox(width: AppSpacing.chipGap),
+            Text(
+              'RunCheck',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.primaryContainer,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ],
         ),
         actions: <Widget>[
           IconButton(
             onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(Icons.settings, color: colorScheme.primaryContainer),
             tooltip: 'Settings',
           ),
         ],
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPaddingH,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        const SizedBox(height: AppSpacing.screenPaddingTop),
-                        _LocationSection(
-                          locationLabel: location?.displayName,
-                          onTap: () => _showLocationBottomSheet(context),
-                        ),
-                        const SizedBox(height: AppSpacing.sectionGap),
-                        Text(
-                          'TRAINING FREQUENCY',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            letterSpacing: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.chipGap),
-                        Text(
-                          'How many runs this week?',
-                          style: theme.textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.labelToContentGap),
-                        RunCountSelector(
-                          selectedCount: _selectedRunCount,
-                          onSelected: (int value) {
-                            setState(() {
-                              _selectedRunCount = value;
-                            });
-                          },
-                        ),
-                        const Spacer(),
-                        SafeArea(
-                          top: false,
-                          child: FilledButton(
-                            onPressed: location == null || _isSubmitting
-                                ? null
-                                : _handleFindRuns,
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.surfaceContainerLowest,
-                                      ),
-                                    ),
-                                  )
-                                : const Text('Find my best runs'),
-                          ),
-                        ),
-                      ],
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPaddingH,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    const SizedBox(height: AppSpacing.screenPaddingTop),
+                    Text(
+                      'Plan your week',
+                      style: theme.textTheme.headlineLarge,
                     ),
-                  ),
+                    const SizedBox(height: AppSpacing.chipGap),
+                    _LocationSection(
+                      locationLabel: location?.displayName,
+                      onTap: () => _showLocationBottomSheet(context),
+                    ),
+                    const SizedBox(height: AppSpacing.sectionGap),
+                    const _HeroBanner(),
+                    const SizedBox(height: AppSpacing.sectionGap),
+                    Text(
+                      'How many runs this week?',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.labelToContentGap),
+                    RunCountSelector(
+                      selectedCount: _selectedRunCount,
+                      onSelected: (int value) {
+                        setState(() {
+                          _selectedRunCount = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    const Spacer(),
+                    SafeArea(
+                      top: false,
+                      minimum: const EdgeInsets.only(bottom: 20),
+                      child: FilledButton(
+                        onPressed: location == null || _isSubmitting
+                            ? null
+                            : _handleFindRuns,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.surfaceContainerLowest,
+                                  ),
+                                ),
+                              )
+                            : Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: AppSpacing.chipGap,
+                                children: <Widget>[
+                                  const Text('Find my best runs'),
+                                  Icon(
+                                    Icons.arrow_forward,
+                                    size: 20,
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -193,46 +212,88 @@ class _LocationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final hasLocation = locationLabel != null;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(AppRadii.card),
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
             children: <Widget>[
-              Text(
-                'LOCATION',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  letterSpacing: 1.6,
+              Icon(
+                Icons.near_me_outlined,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.chipGap),
+              Expanded(
+                child: Text(
+                  locationLabel ?? 'Tap to set your location',
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.labelToContentGap),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      hasLocation ? locationLabel! : 'Tap to set your location',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: hasLocation
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.chipGap),
-                  Icon(Icons.edit_outlined, color: colorScheme.primary),
-                ],
+              const SizedBox(width: AppSpacing.chipGap),
+              Icon(
+                Icons.edit_outlined,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroBanner extends StatelessWidget {
+  const _HeroBanner();
+
+  static const _heroImagePath = 'assets/images/hero_runner.png';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Image.asset(_heroImagePath, fit: BoxFit.cover),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Spacer(),
+                  Text(
+                    'READY TO RUN?',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.chipGap),
+                  Text(
+                    'Find your perfect window today',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
