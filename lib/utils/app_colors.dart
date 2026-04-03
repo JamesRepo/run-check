@@ -5,6 +5,8 @@ abstract final class AppColors {
   static const surfaceContainerLowest = Color(0xFFFFFFFF);
   static const surfaceContainer = Color(0xFFEBEFEA);
   static const secondaryFixed = Color(0xFFD9E5DF);
+  static const onSecondaryFixed = Color(0xFF131E1A);
+  static const onSecondaryContainerMuted = Color(0xFF596560);
 
   static const scoreExcellent = Color(0xFF1B6B4A);
   static const scoreGood = Color(0xCC1B6B4A);

@@ -5,27 +5,16 @@ import 'package:run_check/models/user_preferences.dart';
 import 'package:run_check/providers/settings_provider.dart';
 import 'package:run_check/utils/app_colors.dart';
 import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_shadows.dart';
 import 'package:run_check/utils/app_spacing.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   static const _timePeriodOptions = <_TimePeriodOption>[
-    _TimePeriodOption(
-      value: 'morning',
-      label: 'Morning',
-      description: '5am-12pm',
-    ),
-    _TimePeriodOption(
-      value: 'afternoon',
-      label: 'Afternoon',
-      description: '12pm-6pm',
-    ),
-    _TimePeriodOption(
-      value: 'evening',
-      label: 'Evening',
-      description: '6pm-9pm',
-    ),
+    _TimePeriodOption(value: 'morning', label: 'Morning'),
+    _TimePeriodOption(value: 'afternoon', label: 'Afternoon'),
+    _TimePeriodOption(value: 'evening', label: 'Evening'),
   ];
 
   static const _runDurationOptions = UserPreferences.supportedRunDurations;
@@ -42,81 +31,75 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: colorScheme.primaryContainer),
           tooltip: 'Back',
         ),
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colorScheme.primaryContainer,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenPaddingH,
-          AppSpacing.screenPaddingTop,
+          32,
           AppSpacing.screenPaddingH,
           AppSpacing.cardGap,
         ),
         children: <Widget>[
           const _SectionHeader(title: 'Preferences'),
-          const SizedBox(height: AppSpacing.labelToContentGap),
+          const SizedBox(height: 16),
           _SettingsGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Temperature Unit', style: theme.textTheme.titleLarge),
-                const SizedBox(height: AppSpacing.labelToContentGap),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadii.settingsGroup),
-                  child: SegmentedButton<TemperatureUnit>(
-                    segments: const <ButtonSegment<TemperatureUnit>>[
-                      ButtonSegment<TemperatureUnit>(
-                        value: TemperatureUnit.celsius,
-                        label: Text('°C'),
-                      ),
-                      ButtonSegment<TemperatureUnit>(
-                        value: TemperatureUnit.fahrenheit,
-                        label: Text('°F'),
-                      ),
-                    ],
-                    selected: <TemperatureUnit>{settings.unit},
-                    showSelectedIcon: false,
-                    onSelectionChanged: (Set<TemperatureUnit> selection) {
-                      final unit = selection.first;
-                      settingsNotifier.setUnit(unit);
-                    },
-                  ),
+                Text(
+                  'Temperature unit',
+                  style: _settingLabelStyle(theme, colorScheme),
+                ),
+                const SizedBox(height: 16),
+                _SegmentedControl<TemperatureUnit>(
+                  value: settings.unit,
+                  options: const <_SegmentedOption<TemperatureUnit>>[
+                    _SegmentedOption(
+                      value: TemperatureUnit.celsius,
+                      label: '°C',
+                    ),
+                    _SegmentedOption(
+                      value: TemperatureUnit.fahrenheit,
+                      label: '°F',
+                    ),
+                  ],
+                  onSelected: settingsNotifier.setUnit,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.cardGap),
+          const SizedBox(height: 16),
           _SettingsGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
                   'Preferred time of day',
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppSpacing.chipGap),
-                Text(
-                  'Select when you usually like to train.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: _settingLabelStyle(theme, colorScheme),
                 ),
                 const SizedBox(height: AppSpacing.labelToContentGap),
                 Wrap(
-                  spacing: AppSpacing.chipGap,
-                  runSpacing: AppSpacing.chipGap,
+                  spacing: 12,
+                  runSpacing: 12,
                   children: _timePeriodOptions
                       .map((option) {
                         final isSelected = settings.preferredPeriods.contains(
                           option.value,
                         );
 
-                        return FilterChip(
-                          label: Text(
-                            '${option.label} (${option.description})',
-                          ),
+                        return _SelectableChip(
+                          label: option.label,
                           selected: isSelected,
                           onSelected: (bool selected) {
                             _handlePreferredPeriodToggle(
@@ -133,56 +116,72 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.cardGap),
+          const SizedBox(height: 16),
           _SettingsGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Typical Run Duration', style: theme.textTheme.titleLarge),
+                Text(
+                  'Run duration goal',
+                  style: _settingLabelStyle(theme, colorScheme),
+                ),
                 const SizedBox(height: AppSpacing.labelToContentGap),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadii.settingsGroup),
-                  child: SegmentedButton<int>(
-                    segments: _runDurationOptions
-                        .map(
-                          (int minutes) => ButtonSegment<int>(
-                            value: minutes,
-                            label: Text('$minutes min'),
-                          ),
-                        )
-                        .toList(growable: false),
-                    selected: <int>{settings.runDurationMinutes},
-                    showSelectedIcon: false,
-                    onSelectionChanged: (Set<int> selection) {
-                      final duration = selection.first;
-                      settingsNotifier.setRunDuration(duration);
-                    },
+                _SegmentedControl<int>(
+                  value: settings.runDurationMinutes,
+                  outerRadius: 12,
+                  innerRadius: 8,
+                  shadowColor: colorScheme.primaryContainer.withValues(
+                    alpha: 0.2,
                   ),
+                  options: _runDurationOptions
+                      .map(
+                        (int minutes) => _SegmentedOption<int>(
+                          value: minutes,
+                          label: '$minutes min',
+                        ),
+                      )
+                      .toList(growable: false),
+                  onSelected: settingsNotifier.setRunDuration,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.cardGap),
+          const SizedBox(height: 16),
           _SettingsGroup(
             backgroundColor: AppColors.surfaceContainerLowest,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('Cyclist Mode', style: theme.textTheme.titleLarge),
-              subtitle: Text(
-                'Increases wind sensitivity for cycling',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Cyclist mode',
+                        style: _settingLabelStyle(theme, colorScheme),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Increases wind sensitivity',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              value: settings.cyclistMode,
-              onChanged: (bool value) {
-                settingsNotifier.setCyclistMode(cyclistMode: value);
-              },
+                Switch(
+                  value: settings.cyclistMode,
+                  onChanged: (bool value) {
+                    settingsNotifier.setCyclistMode(cyclistMode: value);
+                  },
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: 32),
           const _SectionHeader(title: 'About'),
-          const SizedBox(height: AppSpacing.labelToContentGap),
+          const SizedBox(height: 16),
           _SettingsGroup(
             child: Column(
               children: <Widget>[
@@ -296,14 +295,182 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-class _TimePeriodOption {
-  const _TimePeriodOption({
+TextStyle? _settingLabelStyle(ThemeData theme, ColorScheme colorScheme) {
+  return theme.textTheme.bodyMedium?.copyWith(
+    color: colorScheme.onSurfaceVariant,
+    fontWeight: FontWeight.w500,
+  );
+}
+
+class _SegmentedControl<T> extends StatelessWidget {
+  const _SegmentedControl({
     required this.value,
-    required this.label,
-    required this.description,
+    required this.options,
+    required this.onSelected,
+    this.outerRadius = AppRadii.button,
+    this.innerRadius = AppRadii.button,
+    this.shadowColor,
   });
+
+  final T value;
+  final List<_SegmentedOption<T>> options;
+  final ValueChanged<T> onSelected;
+  final double outerRadius;
+  final double innerRadius;
+  final Color? shadowColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(outerRadius),
+      ),
+      child: Row(
+        children: options
+            .map(
+              (_SegmentedOption<T> option) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: _SegmentButton<T>(
+                    option: option,
+                    selected: option.value == value,
+                    onPressed: onSelected,
+                    radius: innerRadius,
+                    shadowColor: shadowColor,
+                  ),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+class _SegmentButton<T> extends StatelessWidget {
+  const _SegmentButton({
+    required this.option,
+    required this.selected,
+    required this.onPressed,
+    required this.radius,
+    this.shadowColor,
+  });
+
+  final _SegmentedOption<T> option;
+  final bool selected;
+  final ValueChanged<T> onPressed;
+  final double radius;
+  final Color? shadowColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: selected ? colorScheme.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(radius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(radius),
+        onTap: () => onPressed(option.value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: selected && shadowColor != null
+                ? <BoxShadow>[
+                    AppShadows.editorialShadow.copyWith(color: shadowColor),
+                  ]
+                : const <BoxShadow>[],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            option.label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: selected
+                  ? colorScheme.onPrimary
+                  : AppColors.onSecondaryContainerMuted,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectableChip extends StatelessWidget {
+  const _SelectableChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: selected ? colorScheme.primary : AppColors.secondaryFixed,
+      borderRadius: BorderRadius.circular(AppRadii.chip),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.chip),
+        onTap: () => onSelected(!selected),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.chip),
+            boxShadow: selected
+                ? <BoxShadow>[
+                    AppShadows.editorialShadow.copyWith(
+                      color: colorScheme.primaryContainer.withValues(
+                        alpha: 0.2,
+                      ),
+                    ),
+                  ]
+                : const <BoxShadow>[],
+          ),
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: selected
+                  ? colorScheme.onPrimary
+                  : AppColors.onSecondaryFixed,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentedOption<T> {
+  const _SegmentedOption({required this.value, required this.label});
+
+  final T value;
+  final String label;
+}
+
+class _TimePeriodOption {
+  const _TimePeriodOption({required this.value, required this.label});
 
   final String value;
   final String label;
-  final String description;
 }
