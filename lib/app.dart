@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:run_check/utils/router.dart';
 import 'package:run_check/utils/theme.dart';
 
-class RunCastApp extends ConsumerWidget {
-  const RunCastApp({super.key});
+class RunCheckApp extends ConsumerWidget {
+  const RunCheckApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

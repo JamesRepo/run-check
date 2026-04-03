@@ -18,7 +18,7 @@ Future<void> main() async {
           () => Future<SharedPreferences>.value(sharedPreferences),
         ),
       ],
-      child: const RunCastApp(),
+      child: const RunCheckApp(),
     ),
   );
 }
