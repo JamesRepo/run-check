@@ -26,14 +26,17 @@ void main() {
   });
 
   group('[Widget] HomeScreen', () {
-    testWidgets('should render the placeholder location and disable the CTA '
-        'when no location is set', (WidgetTester tester) async {
+    testWidgets('should render the hero layout and disable the CTA when no '
+        'location is set', (WidgetTester tester) async {
       await _pumpHomeScreen(tester);
 
       expect(find.text('RunCheck'), findsOneWidget);
+      expect(find.text('Plan your week'), findsOneWidget);
       expect(find.text('Tap to set your location'), findsOneWidget);
+      expect(find.text('READY TO RUN?'), findsOneWidget);
+      expect(find.text('Find your perfect window today'), findsOneWidget);
       expect(find.text('How many runs this week?'), findsOneWidget);
-      expect(find.byType(ListWheelScrollView), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
 
       final cta = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Find my best runs'),
@@ -41,38 +44,31 @@ void main() {
       expect(cta.onPressed, isNull);
     });
 
-    testWidgets('should render the default run count in the wheel selector', (
+    testWidgets('should render the hero image asset when the screen builds', (
       WidgetTester tester,
     ) async {
       await _pumpHomeScreen(tester);
 
-      final selectedLabel = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(ListWheelScrollView),
-          matching: find.text('3'),
-        ),
-      );
+      final image = tester.widget<Image>(find.byType(Image));
+      final provider = image.image as AssetImage;
 
-      expect(
-        selectedLabel.style?.color,
-        appTheme.colorScheme.onPrimaryContainer,
-      );
+      expect(provider.assetName, 'assets/images/hero_runner.png');
+      expect(image.fit, BoxFit.cover);
     });
 
-    testWidgets(
-      'should render the location section with the surface container styling',
-      (WidgetTester tester) async {
-        await _pumpHomeScreen(tester);
+    testWidgets('should render the inline location row styling when no '
+        'location is set', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
 
-        final ink = tester.widget<Ink>(
-          find.descendant(of: find.byType(InkWell), matching: find.byType(Ink)),
-        );
-        final decoration = ink.decoration! as BoxDecoration;
+      expect(find.text('LOCATION'), findsNothing);
+      expect(find.byIcon(Icons.near_me_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-        expect(find.text('LOCATION'), findsOneWidget);
-        expect(decoration.color, AppColors.surfaceContainerLow);
-      },
-    );
+      final locationLabel = tester.widget<Text>(
+        find.text('Tap to set your location'),
+      );
+      expect(locationLabel.style?.color, appTheme.colorScheme.onSurfaceVariant);
+    });
 
     testWidgets('should render the saved location when one is available', (
       WidgetTester tester,
@@ -82,26 +78,33 @@ void main() {
       );
 
       await _pumpHomeScreen(tester, locationService: fakeLocationService);
-
       await tester.pumpAndSettle();
 
       expect(find.text('Northampton, UK'), findsOneWidget);
       expect(find.text('Tap to set your location'), findsNothing);
     });
 
-    testWidgets(
-      'should open the location bottom sheet when the location area is tapped',
-      (WidgetTester tester) async {
-        await _pumpHomeScreen(tester);
+    testWidgets('should open the location bottom sheet when the location text '
+        'is tapped', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
 
-        await tester.tap(find.text('Tap to set your location'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Tap to set your location'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Set your location'), findsOneWidget);
-        expect(find.text('Use my current location'), findsOneWidget);
-        expect(find.text('SEARCH CITY'), findsOneWidget);
-      },
-    );
+      expect(find.text('Set your location'), findsOneWidget);
+      expect(find.text('Use my current location'), findsOneWidget);
+      expect(find.text('SEARCH CITY'), findsOneWidget);
+    });
+
+    testWidgets('should open the location bottom sheet when the edit icon is '
+        'tapped', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
+
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set your location'), findsOneWidget);
+    });
 
     testWidgets(
       'should navigate to settings when the settings icon is tapped',
@@ -115,38 +118,84 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should update the selected run count when the wheel is scrolled',
-      (WidgetTester tester) async {
-        final fakeLocationService = FakeLocationService(
-          loadedLocation: testLocation,
-        );
+    testWidgets('should render seven circular run count chips when the screen '
+        'builds', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
 
-        await _pumpHomeScreen(tester, locationService: fakeLocationService);
-        await tester.pumpAndSettle();
+      for (var value = 1; value <= 7; value++) {
+        expect(find.text('$value'), findsOneWidget);
+      }
 
-        await tester.drag(
-          find.byType(ListWheelScrollView),
-          const Offset(0, -80),
-        );
-        await tester.pumpAndSettle();
+      expect(find.byType(AnimatedScale), findsNWidgets(7));
+      expect(find.byType(ListWheelScrollView), findsNothing);
+    });
 
-        final selectedLabel = tester.widget<Text>(
-          find.descendant(
-            of: find.byType(ListWheelScrollView),
-            matching: find.text('5'),
-          ),
-        );
-        expect(
-          selectedLabel.style?.color,
-          appTheme.colorScheme.onPrimaryContainer,
-        );
-      },
-    );
+    testWidgets('should render the default selected run count chip when the '
+        'screen builds', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
 
-    testWidgets('should keep the wheel selector visible on a small screen', (
-      WidgetTester tester,
-    ) async {
+      final selectedContainer = tester.widget<AnimatedContainer>(
+        find.ancestor(
+          of: find.text('3'),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      final selectedScale = tester.widget<AnimatedScale>(
+        find.ancestor(of: find.text('3'), matching: find.byType(AnimatedScale)),
+      );
+      final decoration = selectedContainer.decoration! as BoxDecoration;
+      final selectedLabel = tester.widget<Text>(find.text('3'));
+
+      expect(decoration.color, appTheme.colorScheme.primaryContainer);
+      expect(decoration.shape, BoxShape.circle);
+      expect(decoration.boxShadow, isNotEmpty);
+      expect(selectedScale.scale, 1.1);
+      expect(selectedLabel.style?.color, appTheme.colorScheme.onPrimary);
+    });
+
+    testWidgets('should update the selected run count chip when a new chip is '
+        'tapped', (WidgetTester tester) async {
+      final fakeLocationService = FakeLocationService(
+        loadedLocation: testLocation,
+      );
+
+      await _pumpHomeScreen(tester, locationService: fakeLocationService);
+      await tester.pumpAndSettle();
+
+      await _scrollUntilVisible(
+        tester,
+        find.ancestor(of: find.text('5'), matching: find.byType(InkWell)),
+      );
+      await tester.tap(
+        find.ancestor(of: find.text('5'), matching: find.byType(InkWell)),
+      );
+      await tester.pumpAndSettle();
+
+      final selectedContainer = tester.widget<AnimatedContainer>(
+        find.ancestor(
+          of: find.text('5'),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      final selectedScale = tester.widget<AnimatedScale>(
+        find.ancestor(of: find.text('5'), matching: find.byType(AnimatedScale)),
+      );
+      final previousContainer = tester.widget<AnimatedContainer>(
+        find.ancestor(
+          of: find.text('3'),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      final selectedDecoration = selectedContainer.decoration! as BoxDecoration;
+      final previousDecoration = previousContainer.decoration! as BoxDecoration;
+
+      expect(selectedDecoration.color, appTheme.colorScheme.primaryContainer);
+      expect(selectedScale.scale, 1.1);
+      expect(previousDecoration.color, AppColors.surfaceContainerLowest);
+    });
+
+    testWidgets('should keep the chip selector and CTA visible on a small '
+        'screen', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(320, 568);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -154,8 +203,25 @@ void main() {
 
       await _pumpHomeScreen(tester);
 
-      expect(find.byType(ListWheelScrollView), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
       expect(find.text('Find my best runs'), findsOneWidget);
+    });
+
+    testWidgets('should render the CTA with an arrow icon when the location is '
+        'available', (WidgetTester tester) async {
+      final fakeLocationService = FakeLocationService(
+        loadedLocation: testLocation,
+      );
+
+      await _pumpHomeScreen(tester, locationService: fakeLocationService);
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+
+      final cta = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Find my best runs'),
+      );
+      expect(cta.onPressed, isNotNull);
     });
 
     testWidgets('should fetch weather, schedule runs, and navigate to results '
@@ -192,8 +258,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(ListWheelScrollView), const Offset(0, -80));
+      await _scrollUntilVisible(
+        tester,
+        find.ancestor(of: find.text('5'), matching: find.byType(InkWell)),
+      );
+      await tester.tap(
+        find.ancestor(of: find.text('5'), matching: find.byType(InkWell)),
+      );
       await tester.pumpAndSettle();
+      await _scrollUntilVisible(
+        tester,
+        find.widgetWithText(FilledButton, 'Find my best runs'),
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Find my best runs'));
       await tester.pumpAndSettle();
 
@@ -219,6 +295,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await _scrollUntilVisible(
+        tester,
+        find.widgetWithText(FilledButton, 'Find my best runs'),
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Find my best runs'));
       await tester.pump();
 
@@ -232,41 +312,40 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets(
-      'should show a snackbar and stay on the home screen when weather '
-      'fetching fails',
-      (WidgetTester tester) async {
-        final fakeLocationService = FakeLocationService(
-          loadedLocation: testLocation,
-        );
-        final fakeWeatherService = FakeWeatherService(
-          error: Exception('Weather failed'),
-        );
+    testWidgets('should show a snackbar and stay on the home screen when '
+        'weather fetching fails', (WidgetTester tester) async {
+      final fakeLocationService = FakeLocationService(
+        loadedLocation: testLocation,
+      );
+      final fakeWeatherService = FakeWeatherService(
+        error: Exception('Weather failed'),
+      );
 
-        await _pumpHomeScreen(
-          tester,
-          locationService: fakeLocationService,
-          weatherService: fakeWeatherService,
-        );
-        await tester.pumpAndSettle();
+      await _pumpHomeScreen(
+        tester,
+        locationService: fakeLocationService,
+        weatherService: fakeWeatherService,
+      );
+      await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.widgetWithText(FilledButton, 'Find my best runs'),
-        );
-        await tester.pumpAndSettle();
+      await _scrollUntilVisible(
+        tester,
+        find.widgetWithText(FilledButton, 'Find my best runs'),
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Find my best runs'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Weather failed'), findsOneWidget);
-        expect(find.text('Results Destination'), findsNothing);
-        expect(
-          tester
-              .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Find my best runs'),
-              )
-              .onPressed,
-          isNotNull,
-        );
-      },
-    );
+      expect(find.text('Weather failed'), findsOneWidget);
+      expect(find.text('Results Destination'), findsNothing);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Find my best runs'),
+            )
+            .onPressed,
+        isNotNull,
+      );
+    });
 
     testWidgets('should show a snackbar and stay on the home screen when '
         'scheduling fails', (WidgetTester tester) async {
@@ -291,6 +370,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await _scrollUntilVisible(
+        tester,
+        find.widgetWithText(FilledButton, 'Find my best runs'),
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Find my best runs'));
       await tester.pumpAndSettle();
 
@@ -300,22 +383,20 @@ void main() {
   });
 
   group('[Widget] LocationBottomSheet', () {
-    testWidgets(
-      'should validate the manual search input when the query is empty',
-      (WidgetTester tester) async {
-        await _pumpHomeScreen(tester);
+    testWidgets('should validate the manual search input when the query is '
+        'empty', (WidgetTester tester) async {
+      await _pumpHomeScreen(tester);
 
-        await tester.tap(find.text('Tap to set your location'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
-        await tester.pump();
+      await tester.tap(find.text('Tap to set your location'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+      await tester.pump();
 
-        expect(find.text('Enter a city name'), findsOneWidget);
-      },
-    );
+      expect(find.text('Enter a city name'), findsOneWidget);
+    });
 
-    testWidgets('should search for a location and close the sheet when '
-        'manual search succeeds', (WidgetTester tester) async {
+    testWidgets('should search for a location and close the sheet when manual '
+        'search succeeds', (WidgetTester tester) async {
       final fakeLocationService = FakeLocationService(
         searchLocationResult: testLocation,
       );
@@ -333,8 +414,8 @@ void main() {
       expect(find.text('Northampton, UK'), findsOneWidget);
     });
 
-    testWidgets('should show a manual search error below the search form '
-        'when search fails', (WidgetTester tester) async {
+    testWidgets('should show a manual search error below the search form when '
+        'search fails', (WidgetTester tester) async {
       final fakeLocationService = FakeLocationService(
         searchLocationError: Exception('Location not found'),
       );
@@ -351,8 +432,8 @@ void main() {
       expect(find.text('Set your location'), findsOneWidget);
     });
 
-    testWidgets('should detect the current location and close the sheet '
-        'when detection succeeds', (WidgetTester tester) async {
+    testWidgets('should detect the current location and close the sheet when '
+        'detection succeeds', (WidgetTester tester) async {
       final fakeLocationService = FakeLocationService(
         currentLocationResult: testLocation,
       );
@@ -368,8 +449,8 @@ void main() {
       expect(find.text('Northampton, UK'), findsOneWidget);
     });
 
-    testWidgets('should show a current location error below the action '
-        'when detection fails', (WidgetTester tester) async {
+    testWidgets('should show a current location error below the action when '
+        'detection fails', (WidgetTester tester) async {
       final fakeLocationService = FakeLocationService(
         currentLocationError: Exception('GPS unavailable'),
       );
@@ -438,6 +519,15 @@ Future<void> _pumpHomeScreen(
   );
 
   await tester.pump();
+}
+
+Future<void> _scrollUntilVisible(WidgetTester tester, Finder finder) async {
+  await tester.dragUntilVisible(
+    finder,
+    find.byType(CustomScrollView),
+    const Offset(0, -200),
+  );
+  await tester.pumpAndSettle();
 }
 
 class FakeLocationService extends LocationService {

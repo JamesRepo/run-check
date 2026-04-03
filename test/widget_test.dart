@@ -10,11 +10,11 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  group('[Widget] RunCastApp', () {
+  group('[Widget] RunCheckApp', () {
     testWidgets('should render the home route when built', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const ProviderScope(child: RunCastApp()));
+      await tester.pumpWidget(const ProviderScope(child: RunCheckApp()));
       await tester.pumpAndSettle();
 
       expect(find.text('RunCheck'), findsOneWidget);
@@ -23,7 +23,7 @@ void main() {
     testWidgets('should configure a MaterialApp when built', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const ProviderScope(child: RunCastApp()));
+      await tester.pumpWidget(const ProviderScope(child: RunCheckApp()));
       await tester.pumpAndSettle();
 
       final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
@@ -34,7 +34,7 @@ void main() {
     testWidgets('should apply the shared app theme when built', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const ProviderScope(child: RunCastApp()));
+      await tester.pumpWidget(const ProviderScope(child: RunCheckApp()));
       await tester.pumpAndSettle();
 
       final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
@@ -45,11 +45,11 @@ void main() {
     testWidgets('should show a centered scaffold body when built', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const ProviderScope(child: RunCastApp()));
+      await tester.pumpWidget(const ProviderScope(child: RunCheckApp()));
       await tester.pumpAndSettle();
 
       expect(find.byType(Scaffold), findsOneWidget);
-      expect(find.text('Tap to set your location'), findsOneWidget);
+      expect(find.text('Plan your week'), findsOneWidget);
     });
   });
 }

@@ -26,7 +26,7 @@ void main() {
     });
   });
 
-  group('[Widget] RunCastApp routing', () {
+  group('[Widget] RunCheckApp routing', () {
     testWidgets('should render the home screen when app starts', (
       WidgetTester tester,
     ) async {
@@ -37,14 +37,14 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const RunCastApp(),
+          child: const RunCheckApp(),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.text('RunCheck'), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
-      expect(find.text('Tap to set your location'), findsOneWidget);
+      expect(find.text('Plan your week'), findsOneWidget);
     });
 
     testWidgets(
@@ -58,7 +58,7 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const RunCastApp(),
+            child: const RunCheckApp(),
           ),
         );
         await tester.pumpAndSettle();
@@ -81,7 +81,7 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const RunCastApp(),
+            child: const RunCheckApp(),
           ),
         );
         await tester.pumpAndSettle();
@@ -104,7 +104,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const RunCastApp(),
+          child: const RunCheckApp(),
         ),
       );
       await tester.pumpAndSettle();
@@ -122,7 +122,7 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const RunCastApp(),
+            child: const RunCheckApp(),
           ),
         );
         await tester.pumpAndSettle();
@@ -141,7 +141,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const RunCastApp(),
+          child: const RunCheckApp(),
         ),
       );
       await tester.pumpAndSettle();
@@ -164,36 +164,35 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const RunCastApp(),
+            child: const RunCheckApp(),
           ),
         );
         await tester.pumpAndSettle();
 
         expect(find.text('RunCheck'), findsOneWidget);
-        expect(find.text('Tap to set your location'), findsOneWidget);
+        expect(find.text('Plan your week'), findsOneWidget);
         expect(find.text('Your Best Runs'), findsNothing);
       },
     );
 
-    testWidgets(
-      'should allow /results when schedule data contains slots',
-      (WidgetTester tester) async {
-        final container = _createContainerWithScheduleData();
-        addTearDown(container.dispose);
-        container.read(goRouterProvider).go('/results');
+    testWidgets('should allow /results when schedule data contains slots', (
+      WidgetTester tester,
+    ) async {
+      final container = _createContainerWithScheduleData();
+      addTearDown(container.dispose);
+      container.read(goRouterProvider).go('/results');
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const RunCastApp(),
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const RunCheckApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text('Your Best Runs'), findsOneWidget);
-        expect(find.text('RunCheck'), findsNothing);
-      },
-    );
+      expect(find.text('Your Best Runs'), findsOneWidget);
+      expect(find.text('RunCheck'), findsNothing);
+    });
 
     testWidgets(
       'should allow /results when requestedRuns is positive even with '
@@ -209,7 +208,7 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const RunCastApp(),
+            child: const RunCheckApp(),
           ),
         );
         await tester.pumpAndSettle();
@@ -222,28 +221,27 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should not redirect when navigating to / or /settings',
-      (WidgetTester tester) async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-        final router = container.read(goRouterProvider)..go('/');
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const RunCastApp(),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('should not redirect when navigating to / or /settings', (
+      WidgetTester tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final router = container.read(goRouterProvider)..go('/');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const RunCheckApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text('RunCheck'), findsOneWidget);
+      expect(find.text('RunCheck'), findsOneWidget);
 
-        router.go('/settings');
-        await tester.pumpAndSettle();
+      router.go('/settings');
+      await tester.pumpAndSettle();
 
-        expect(find.text('Settings'), findsOneWidget);
-      },
-    );
+      expect(find.text('Settings'), findsOneWidget);
+    });
   });
 }
 
