@@ -80,7 +80,7 @@ class TimeSlotCard extends StatelessWidget {
                             ),
                             Icon(
                               _weatherIcon(slot.weatherCode),
-                              size: 22,
+                              size: 30,
                               color: _weatherIconColor(slot.weatherCode),
                             ),
                           ],
@@ -104,7 +104,7 @@ class TimeSlotCard extends StatelessWidget {
                               label: _formatTemperature(),
                             ),
                             _DataPill(
-                              icon: Icons.water_drop_outlined,
+                              icon: Icons.water_drop,
                               label: '${slot.precipitationProbability}%',
                             ),
                             _DataPill(
@@ -152,33 +152,43 @@ class TimeSlotCard extends StatelessWidget {
   }
 
   static IconData _weatherIcon(int code) {
-    if (code <= 1) return Icons.wb_sunny;
-    if (code <= 3) return Icons.cloud;
-    if (code <= 48) return Icons.cloud;
-    if (code <= 55) return Icons.water_drop;
-    if (code <= 65) return Icons.water_drop;
-    if (code <= 75) return Icons.ac_unit;
-    if (code <= 82) return Icons.water_drop;
-    if (code >= 95) return Icons.thunderstorm;
+    if (code == 0 || code == 1) return Icons.wb_sunny;
+    if (code == 2 || code == 3 || code == 45 || code == 48) {
+      return Icons.cloud;
+    }
+    if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) {
+      return Icons.water_drop;
+    }
+    if (code >= 71 && code <= 75) return Icons.ac_unit;
+    if (code == 95 || code == 96 || code == 99) return Icons.thunderstorm;
     return Icons.cloud;
   }
 
   static Color _weatherIconColor(int code) {
-    if (code <= 1) {
-      return AppColors.sunnyIcon;
-    }
-    if (code <= 48) {
+    if (code == 0 || code == 1) return AppColors.sunnyIcon;
+    if (code == 2 || code == 3 || code == 45 || code == 48) {
       return AppColors.cloudyIcon;
     }
-    return AppColors.rainIcon;
+    if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) {
+      return AppColors.rainIcon;
+    }
+    if (code >= 71 && code <= 75) return AppColors.cloudyIcon;
+    if (code == 95 || code == 96 || code == 99) return AppColors.rainIcon;
+    return AppColors.cloudyIcon;
   }
 
   static Color _scoreColor(double score) {
     if (score >= 0.7) {
       return AppColors.scoreExcellent;
     }
+    if (score >= 0.6) {
+      return AppColors.scoreGood;
+    }
     if (score >= 0.4) {
       return AppColors.scoreFair;
+    }
+    if (score >= 0.2) {
+      return AppColors.scoreFairMuted;
     }
     return AppColors.scorePoor;
   }

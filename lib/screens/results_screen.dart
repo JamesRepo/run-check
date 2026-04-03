@@ -33,26 +33,39 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: colorScheme.primaryContainer),
           tooltip: 'Back',
         ),
-        title: const Text('Your Best Runs'),
+        title: Text(
+          'Your Best Runs',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colorScheme.primaryContainer,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: <Widget>[
           if (_isRefreshing)
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.dataPillPaddingH),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.dataPillPaddingH),
               child: SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    colorScheme.primaryContainer,
+                  ),
+                ),
               ),
             )
           else
             IconButton(
               onPressed: _handleRefresh,
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh, color: colorScheme.primaryContainer),
               tooltip: 'Refresh',
             ),
         ],
@@ -64,9 +77,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.screenPaddingH,
-                  vertical: AppSpacing.cardGap,
                 ),
                 children: <Widget>[
+                  const SizedBox(height: 32),
+                  _EditorialHeader(theme: theme, colorScheme: colorScheme),
+                  const SizedBox(height: 32),
                   if (weatherState.isStale)
                     _StaleBanner(colorScheme: colorScheme, theme: theme),
                   if (slots.length < requestedRuns)
@@ -179,6 +194,38 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _EditorialHeader extends StatelessWidget {
+  const _EditorialHeader({required this.theme, required this.colorScheme});
+
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'OPTIMAL WINDOWS',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.chipGap),
+        Text(
+          'Recommended for your weekly gallop.',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+          ),
+        ),
+      ],
+    );
   }
 }
 

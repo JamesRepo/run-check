@@ -9,6 +9,7 @@ abstract final class AppColors {
   static const scoreExcellent = Color(0xFF1B6B4A);
   static const scoreGood = Color(0xCC1B6B4A);
   static const scoreFair = Color(0xFFFBBF24);
+  static const scoreFairMuted = Color(0x99FBBF24);
   static const scorePoor = Color(0xFF753134);
 
   static const sunnyIcon = Color(0xFFF59E0B);
