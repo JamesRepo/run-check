@@ -5,6 +5,9 @@ import 'package:run_check/providers/location_provider.dart';
 import 'package:run_check/providers/run_scheduler_provider.dart';
 import 'package:run_check/providers/settings_provider.dart';
 import 'package:run_check/providers/weather_provider.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_spacing.dart';
 import 'package:run_check/widgets/time_slot_card.dart';
 
 class ResultsScreen extends ConsumerStatefulWidget {
@@ -39,7 +42,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         actions: <Widget>[
           if (_isRefreshing)
             const Padding(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppSpacing.dataPillPaddingH),
               child: SizedBox(
                 width: 24,
                 height: 24,
@@ -60,8 +63,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               onRefresh: _refresh,
               child: ListView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: AppSpacing.screenPaddingH,
+                  vertical: AppSpacing.cardGap,
                 ),
                 children: <Widget>[
                   if (weatherState.isStale)
@@ -75,7 +78,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     ),
                   for (var i = 0; i < slots.length; i++)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.only(
+                        bottom: AppSpacing.cardGap,
+                      ),
                       child: TimeSlotCard(
                         slot: slots[i],
                         rank: i + 1,
@@ -97,7 +102,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
             height: MediaQuery.of(context).size.height * 0.7,
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sectionGap,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -106,13 +113,13 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       size: 64,
                       color: colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.labelToContentGap),
                     Text(
                       'No suitable run windows found this week.',
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.chipGap),
                     Text(
                       'Try adjusting your preferences or '
                       'check back tomorrow.',
@@ -184,22 +191,24 @@ class _StaleBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.cardGap),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.cardPadding,
+        vertical: AppSpacing.dataPillPaddingV + 4,
+      ),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.shade200),
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.info_outline, size: 18, color: Colors.amber.shade800),
-          const SizedBox(width: 10),
+          Icon(Icons.info_outline, size: 18, color: colorScheme.primary),
+          const SizedBox(width: AppSpacing.dataPillGap),
           Expanded(
             child: Text(
               'Using cached forecast. Pull down to refresh.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.amber.shade900,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -225,13 +234,14 @@ class _LowResultsNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.cardGap),
       child: Text(
         'We found $found good window${found == 1 ? '' : 's'} '
         'out of the $requested you requested. '
         "It's a tough weather week!",
-        style: theme.textTheme.bodyMedium?.copyWith(
+        style: theme.textTheme.labelSmall?.copyWith(
           color: colorScheme.onSurfaceVariant,
+          letterSpacing: 0.4,
         ),
       ),
     );

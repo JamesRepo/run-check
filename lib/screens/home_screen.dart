@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:run_check/providers/location_provider.dart';
 import 'package:run_check/providers/run_scheduler_provider.dart';
 import 'package:run_check/providers/weather_provider.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_spacing.dart';
 import 'package:run_check/widgets/location_bottom_sheet.dart';
 import 'package:run_check/widgets/run_count_selector.dart';
 
@@ -31,7 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: Text(
           'RunCheck',
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.titleLarge?.copyWith(
             color: colorScheme.primary,
           ),
         ),
@@ -44,53 +47,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const SizedBox(height: 24),
-              _LocationSection(
-                locationLabel: location?.displayName,
-                onTap: () => _showLocationBottomSheet(context),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'How many runs this week?',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              RunCountSelector(
-                selectedCount: _selectedRunCount,
-                onSelected: (int value) {
-                  setState(() {
-                    _selectedRunCount = value;
-                  });
-                },
-              ),
-              const Spacer(),
-              SafeArea(
-                top: false,
-                child: FilledButton(
-                  onPressed: location == null || _isSubmitting
-                      ? null
-                      : _handleFindRuns,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingH,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        const SizedBox(height: AppSpacing.screenPaddingTop),
+                        _LocationSection(
+                          locationLabel: location?.displayName,
+                          onTap: () => _showLocationBottomSheet(context),
+                        ),
+                        const SizedBox(height: AppSpacing.sectionGap),
+                        Text(
+                          'TRAINING FREQUENCY',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            letterSpacing: 1.6,
                           ),
-                        )
-                      : const Text('Find my best runs'),
+                        ),
+                        const SizedBox(height: AppSpacing.chipGap),
+                        Text(
+                          'How many runs this week?',
+                          style: theme.textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.labelToContentGap),
+                        RunCountSelector(
+                          selectedCount: _selectedRunCount,
+                          onSelected: (int value) {
+                            setState(() {
+                              _selectedRunCount = value;
+                            });
+                          },
+                        ),
+                        const Spacer(),
+                        SafeArea(
+                          top: false,
+                          child: FilledButton(
+                            onPressed: location == null || _isSubmitting
+                                ? null
+                                : _handleFindRuns,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.surfaceContainerLowest,
+                                      ),
+                                    ),
+                                  )
+                                : const Text('Find my best runs'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -100,6 +123,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.surfaceContainerLowest,
+      showDragHandle: true,
       builder: (BuildContext context) {
         return const LocationBottomSheet();
       },
@@ -172,23 +197,42 @@ class _LocationSection extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                hasLocation ? locationLabel! : 'Tap to set your location',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: hasLocation
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'LOCATION',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  letterSpacing: 1.6,
                 ),
               ),
-            ),
-            Icon(Icons.edit_outlined, color: colorScheme.primary),
-          ],
+              const SizedBox(height: AppSpacing.labelToContentGap),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      hasLocation ? locationLabel! : 'Tap to set your location',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: hasLocation
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.chipGap),
+                  Icon(Icons.edit_outlined, color: colorScheme.primary),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

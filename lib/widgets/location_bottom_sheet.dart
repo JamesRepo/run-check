@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:run_check/providers/location_provider.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_spacing.dart';
 
 class LocationBottomSheet extends ConsumerStatefulWidget {
   const LocationBottomSheet({super.key});
@@ -31,13 +33,23 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screenPaddingH,
+          AppSpacing.cardPadding,
+          AppSpacing.screenPaddingH,
+          AppSpacing.cardPadding + bottomInset,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text('Set your location', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 16),
+            Text(
+              'LOCATION',
+              style: theme.textTheme.labelMedium?.copyWith(letterSpacing: 1.6),
+            ),
+            const SizedBox(height: AppSpacing.chipGap),
+            Text('Set your location', style: theme.textTheme.headlineMedium),
+            const SizedBox(height: AppSpacing.labelToContentGap),
             OutlinedButton.icon(
               onPressed: isLoading ? null : _useCurrentLocation,
               icon: isLoading && _lastAction == _LocationAction.current
@@ -51,7 +63,7 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
             ),
             if (_lastAction == _LocationAction.current && errorMessage != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: AppSpacing.chipGap),
                 child: Text(
                   errorMessage,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -59,7 +71,7 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
                   ),
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.cardGap),
             Form(
               key: _formKey,
               child: TextFormField(
@@ -67,8 +79,10 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
                 textInputAction: TextInputAction.search,
                 enabled: !isLoading,
                 decoration: const InputDecoration(
-                  labelText: 'Search city',
+                  labelText: 'SEARCH CITY',
                   prefixIcon: Icon(Icons.search),
+                  hintText: 'London',
+                  fillColor: AppColors.surfaceContainerLow,
                 ),
                 onFieldSubmitted: (_) => _searchForLocation(),
                 validator: (String? value) {
@@ -80,7 +94,7 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.labelToContentGap),
             FilledButton(
               onPressed: isLoading ? null : _searchForLocation,
               child: isLoading && _lastAction == _LocationAction.search
@@ -93,7 +107,7 @@ class _LocationBottomSheetState extends ConsumerState<LocationBottomSheet> {
             ),
             if (_lastAction == _LocationAction.search && errorMessage != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: AppSpacing.chipGap),
                 child: Text(
                   errorMessage,
                   style: theme.textTheme.bodyMedium?.copyWith(

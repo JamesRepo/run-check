@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:run_check/models/time_slot.dart';
 import 'package:run_check/models/user_preferences.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_shadows.dart';
+import 'package:run_check/utils/app_spacing.dart';
 import 'package:run_check/utils/temperature_utils.dart';
 
 class TimeSlotCard extends StatelessWidget {
@@ -45,68 +49,79 @@ class TimeSlotCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        boxShadow: const <BoxShadow>[AppShadows.editorialShadow],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: Column(
           children: <Widget>[
-            _RankBadge(rank: rank, colorScheme: colorScheme),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          _formatDate(slot.startTime),
-                          style: theme.textTheme.titleMedium,
+                  _RankBadge(rank: rank),
+                  const SizedBox(width: AppSpacing.labelToContentGap),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                _formatDate(slot.startTime),
+                                style: theme.textTheme.titleLarge,
+                              ),
+                            ),
+                            Icon(
+                              _weatherIcon(slot.weatherCode),
+                              size: 22,
+                              color: _weatherIconColor(slot.weatherCode),
+                            ),
+                          ],
                         ),
-                      ),
-                      Icon(
-                        _weatherIcon(slot.weatherCode),
-                        size: 22,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_formatTime(slot.startTime)}'
-                    ' – '
-                    '${_formatTime(slot.endTime)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                        const SizedBox(height: AppSpacing.chipGap),
+                        Text(
+                          '${_formatTime(slot.startTime)}'
+                          ' – '
+                          '${_formatTime(slot.endTime)}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.labelToContentGap),
+                        Wrap(
+                          spacing: AppSpacing.dataPillGap,
+                          runSpacing: AppSpacing.dataPillGap,
+                          children: <Widget>[
+                            _DataPill(
+                              icon: Icons.thermostat_outlined,
+                              label: _formatTemperature(),
+                            ),
+                            _DataPill(
+                              icon: Icons.water_drop_outlined,
+                              label: '${slot.precipitationProbability}%',
+                            ),
+                            _DataPill(
+                              icon: Icons.air,
+                              label: '${slot.windSpeed.round()} km/h',
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: <Widget>[
-                      _InfoChip(
-                        icon: Icons.thermostat_outlined,
-                        label: _formatTemperature(),
-                        colorScheme: colorScheme,
-                      ),
-                      const SizedBox(width: 12),
-                      _InfoChip(
-                        icon: Icons.water_drop_outlined,
-                        label: '${slot.precipitationProbability}%',
-                        colorScheme: colorScheme,
-                      ),
-                      const SizedBox(width: 12),
-                      _InfoChip(
-                        icon: Icons.air,
-                        label: '${slot.windSpeed.round()} km/h',
-                        colorScheme: colorScheme,
-                      ),
-                      const Spacer(),
-                      _ScoreDot(score: slot.score),
-                    ],
                   ),
                 ],
               ),
+            ),
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Container(height: 6, color: _scoreColor(slot.score)),
             ),
           ],
         ),
@@ -129,10 +144,9 @@ class TimeSlotCard extends StatelessWidget {
 
   String _formatTemperature() {
     final isFahrenheit = unit == TemperatureUnit.fahrenheit;
-    final value =
-        isFahrenheit
-            ? celsiusToFahrenheit(slot.temperature)
-            : slot.temperature;
+    final value = isFahrenheit
+        ? celsiusToFahrenheit(slot.temperature)
+        : slot.temperature;
     final suffix = isFahrenheit ? '°F' : '°C';
     return '${value.round()}$suffix';
   }
@@ -148,84 +162,90 @@ class TimeSlotCard extends StatelessWidget {
     if (code >= 95) return Icons.thunderstorm;
     return Icons.cloud;
   }
+
+  static Color _weatherIconColor(int code) {
+    if (code <= 1) {
+      return AppColors.sunnyIcon;
+    }
+    if (code <= 48) {
+      return AppColors.cloudyIcon;
+    }
+    return AppColors.rainIcon;
+  }
+
+  static Color _scoreColor(double score) {
+    if (score >= 0.7) {
+      return AppColors.scoreExcellent;
+    }
+    if (score >= 0.4) {
+      return AppColors.scoreFair;
+    }
+    return AppColors.scorePoor;
+  }
 }
 
 class _RankBadge extends StatelessWidget {
-  const _RankBadge({required this.rank, required this.colorScheme});
+  const _RankBadge({required this.rank});
 
   final int rank;
-  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      width: 30,
-      height: 30,
-      margin: const EdgeInsets.only(top: 2),
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
+        color: colorScheme.primary,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Text(
         '$rank',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onPrimaryContainer,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.colorScheme,
-  });
+class _DataPill extends StatelessWidget {
+  const _DataPill({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 15, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-        ),
-      ],
-    );
-  }
-}
-
-class _ScoreDot extends StatelessWidget {
-  const _ScoreDot({required this.score});
-
-  final double score;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color;
-    if (score >= 0.7) {
-      color = Colors.green;
-    } else if (score >= 0.4) {
-      color = Colors.amber;
-    } else {
-      color = Colors.red;
-    }
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.dataPillPaddingH,
+        vertical: AppSpacing.dataPillPaddingV,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadii.dataPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: AppSpacing.dataPillGap),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

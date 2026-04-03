@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:run_check/utils/app_colors.dart';
+import 'package:run_check/utils/app_radii.dart';
+import 'package:run_check/utils/app_spacing.dart';
 
 class RunCountSelector extends StatefulWidget {
   const RunCountSelector({
@@ -47,8 +50,8 @@ class _RunCountSelectorState extends State<RunCountSelector> {
     return Container(
       height: 140,
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -58,10 +61,12 @@ class _RunCountSelectorState extends State<RunCountSelector> {
               child: Center(
                 child: Container(
                   height: 40,
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.dataPillPaddingH,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadii.dataPill),
                   ),
                 ),
               ),
