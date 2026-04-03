@@ -46,6 +46,7 @@ void main() {
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.wb_sunny));
       expect(icon.color, AppColors.sunnyIcon);
+      expect(icon.size, 30);
     });
 
     testWidgets('should use a cloudy icon when the weather code is cloudy', (
@@ -62,9 +63,32 @@ void main() {
     ) async {
       await _pumpCard(tester, slot: _slotWithWeatherCode(63), rank: 1);
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.water_drop));
+      final icon = tester
+          .widgetList<Icon>(find.byIcon(Icons.water_drop))
+          .firstWhere((icon) => icon.size == 30);
       expect(icon.color, AppColors.rainIcon);
     });
+
+    testWidgets('should use a snow icon when the weather code is snowy', (
+      WidgetTester tester,
+    ) async {
+      await _pumpCard(tester, slot: _slotWithWeatherCode(71), rank: 1);
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.ac_unit));
+      expect(icon.color, AppColors.cloudyIcon);
+      expect(icon.size, 30);
+    });
+
+    testWidgets(
+      'should use a thunderstorm icon when the weather code is stormy',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithWeatherCode(95), rank: 1);
+
+        final icon = tester.widget<Icon>(find.byIcon(Icons.thunderstorm));
+        expect(icon.color, AppColors.rainIcon);
+        expect(icon.size, 30);
+      },
+    );
 
     testWidgets(
       'should render the result card with editorial shadow and white surface',
@@ -96,6 +120,96 @@ void main() {
       expect(badge.constraints?.maxHeight, 40);
       expect(decoration.shape, BoxShape.circle);
       expect(decoration.color, appTheme.colorScheme.primary);
+    });
+
+    testWidgets(
+      'should separate the rank badge from the content using the standard gap',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+        expect(
+          find.descendant(
+            of: find.byType(TimeSlotCard),
+            matching: find.byWidgetPredicate(
+              (Widget widget) =>
+                  widget is SizedBox &&
+                  widget.width == AppSpacing.labelToContentGap &&
+                  widget.height == null,
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('should separate the time row from the metric pills '
+        'using the standard gap', (WidgetTester tester) async {
+      await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+      expect(
+        find.descendant(
+          of: find.byType(TimeSlotCard),
+          matching: find.byWidgetPredicate(
+            (Widget widget) =>
+                widget is SizedBox &&
+                widget.height == AppSpacing.labelToContentGap &&
+                widget.width == null,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('should render metric pills with the standard horizontal gap', (
+      WidgetTester tester,
+    ) async {
+      await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+      final wrap = tester.widget<Wrap>(find.byType(Wrap));
+
+      expect(wrap.spacing, AppSpacing.dataPillGap);
+    });
+
+    testWidgets(
+      'should keep the precipitation pill icon as a filled water drop',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+        final pillIcon = tester
+            .widgetList<Icon>(find.byIcon(Icons.water_drop))
+            .firstWhere((icon) => icon.size == 16);
+
+        expect(pillIcon.color, appTheme.colorScheme.onSurfaceVariant);
+        expect(find.byIcon(Icons.water_drop_outlined), findsNothing);
+      },
+    );
+
+    testWidgets('should render the precipitation weather icon independently '
+        'from the data pill icon', (WidgetTester tester) async {
+      await _pumpCard(tester, slot: _slotWithWeatherCode(63), rank: 1);
+
+      final waterDropIcons = tester.widgetList<Icon>(
+        find.byIcon(Icons.water_drop),
+      );
+
+      expect(waterDropIcons.length, 2);
+      expect(
+        waterDropIcons.any(
+          (Widget widget) =>
+              widget is Icon &&
+              widget.size == 30 &&
+              widget.color == AppColors.rainIcon,
+        ),
+        isTrue,
+      );
+      expect(
+        waterDropIcons.any(
+          (widget) =>
+              widget.size == 16 &&
+              widget.color == appTheme.colorScheme.onSurfaceVariant,
+        ),
+        isTrue,
+      );
     });
 
     testWidgets('should render weather metrics inside tonal data pills', (
@@ -136,7 +250,17 @@ void main() {
     );
 
     testWidgets(
-      'should render a fair score strip when the score is between 0.4 and 0.69',
+      'should render a good score strip when the score is between 0.6 and 0.69',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithScore(0.65), rank: 1);
+
+        final strip = tester.widget<Container>(_findScoreStrip());
+        expect(strip.color, AppColors.scoreGood);
+      },
+    );
+
+    testWidgets(
+      'should render a fair score strip when the score is between 0.4 and 0.59',
       (WidgetTester tester) async {
         await _pumpCard(tester, slot: _slotWithScore(0.55), rank: 1);
 
@@ -146,14 +270,36 @@ void main() {
     );
 
     testWidgets(
-      'should render a poor score strip when the score is below 0.4',
+      'should render a muted fair score strip when the score is between '
+      '0.2 and 0.39',
       (WidgetTester tester) async {
         await _pumpCard(tester, slot: _slotWithScore(0.2), rank: 1);
+
+        final strip = tester.widget<Container>(_findScoreStrip());
+        expect(strip.color, AppColors.scoreFairMuted);
+      },
+    );
+
+    testWidgets(
+      'should render a poor score strip when the score is below 0.2',
+      (WidgetTester tester) async {
+        await _pumpCard(tester, slot: _slotWithScore(0.19), rank: 1);
 
         final strip = tester.widget<Container>(_findScoreStrip());
         expect(strip.color, AppColors.scorePoor);
       },
     );
+
+    testWidgets('should render a flat six pixel score strip', (
+      WidgetTester tester,
+    ) async {
+      await _pumpCard(tester, slot: _clearMorningSlot, rank: 1);
+
+      final strip = tester.widget<Container>(_findScoreStrip());
+
+      expect(strip.constraints?.minHeight, 6);
+      expect(strip.constraints?.maxHeight, 6);
+    });
 
     testWidgets('should zero-pad single-digit hours and minutes', (
       WidgetTester tester,

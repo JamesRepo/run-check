@@ -22,6 +22,7 @@ import 'package:run_check/screens/results_screen.dart';
 import 'package:run_check/services/location_service.dart';
 import 'package:run_check/services/run_scheduler.dart';
 import 'package:run_check/services/weather_service.dart';
+import 'package:run_check/utils/app_spacing.dart';
 import 'package:run_check/utils/theme.dart';
 import 'package:run_check/widgets/time_slot_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,6 +42,33 @@ void main() {
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       expect(find.byTooltip('Back'), findsOneWidget);
     });
+
+    testWidgets('should center the title when results are shown', (
+      WidgetTester tester,
+    ) async {
+      await _pumpResultsScreen(tester, slots: _twoSlots);
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+
+      expect(appBar.centerTitle, isTrue);
+    });
+
+    testWidgets(
+      'should apply primary container styling to the app bar title and icons',
+      (WidgetTester tester) async {
+        await _pumpResultsScreen(tester, slots: _twoSlots);
+
+        final title = tester.widget<Text>(find.text('Your Best Runs'));
+        final backIcon = tester.widget<Icon>(find.byIcon(Icons.arrow_back));
+        final refreshIcon = tester.widget<Icon>(find.byIcon(Icons.refresh));
+
+        expect(title.style?.color, appTheme.colorScheme.primaryContainer);
+        expect(title.style?.fontWeight, FontWeight.w800);
+        expect(title.style?.letterSpacing, -0.3);
+        expect(backIcon.color, appTheme.colorScheme.primaryContainer);
+        expect(refreshIcon.color, appTheme.colorScheme.primaryContainer);
+      },
+    );
 
     testWidgets('should display refresh icon button', (
       WidgetTester tester,
@@ -64,6 +92,32 @@ void main() {
   });
 
   group('[Widget] ResultsScreen — results list', () {
+    testWidgets('should display the editorial header above the result cards '
+        'when slots exist', (WidgetTester tester) async {
+      await _pumpResultsScreen(tester, slots: _twoSlots);
+
+      expect(find.text('OPTIMAL WINDOWS'), findsOneWidget);
+      expect(find.text('Recommended for your weekly gallop.'), findsOneWidget);
+
+      final headerTopLeft = tester.getTopLeft(find.text('OPTIMAL WINDOWS'));
+      final firstCardTopLeft = tester.getTopLeft(
+        find.byType(TimeSlotCard).first,
+      );
+
+      expect(headerTopLeft.dy, greaterThan(0));
+      expect(firstCardTopLeft.dy, greaterThan(headerTopLeft.dy));
+    });
+
+    testWidgets(
+      'should not display the editorial header when no slots are returned',
+      (WidgetTester tester) async {
+        await _pumpResultsScreen(tester, slots: const <TimeSlot>[]);
+
+        expect(find.text('OPTIMAL WINDOWS'), findsNothing);
+        expect(find.text('Recommended for your weekly gallop.'), findsNothing);
+      },
+    );
+
     testWidgets('should render a TimeSlotCard for each slot', (
       WidgetTester tester,
     ) async {
@@ -112,6 +166,29 @@ void main() {
         expect(find.text('13°C'), findsNothing);
       },
     );
+
+    testWidgets(
+      'should use card gap spacing between consecutive result cards',
+      (WidgetTester tester) async {
+        await _pumpResultsScreen(tester, slots: _twoSlots);
+
+        final paddingWidgets = tester.widgetList<Padding>(
+          find.ancestor(
+            of: find.byType(TimeSlotCard),
+            matching: find.byType(Padding),
+          ),
+        );
+
+        expect(
+          paddingWidgets.any(
+            (padding) =>
+                padding.padding ==
+                const EdgeInsets.only(bottom: AppSpacing.cardGap),
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('[Widget] ResultsScreen — empty state', () {
@@ -125,9 +202,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(
-          'Try adjusting your preferences or check back tomorrow.',
-        ),
+        find.text('Try adjusting your preferences or check back tomorrow.'),
         findsOneWidget,
       );
       expect(find.byIcon(Icons.water_drop), findsOneWidget);
@@ -164,30 +239,21 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should pluralise "windows" when more than one slot found',
-      (WidgetTester tester) async {
-        await _pumpResultsScreen(
-          tester,
-          slots: _twoSlots,
-          requestedRuns: 5,
-        );
+    testWidgets('should pluralise "windows" when more than one slot found', (
+      WidgetTester tester,
+    ) async {
+      await _pumpResultsScreen(tester, slots: _twoSlots, requestedRuns: 5);
 
-        expect(
-          find.textContaining('We found 2 good windows out of the 5'),
-          findsOneWidget,
-        );
-      },
-    );
+      expect(
+        find.textContaining('We found 2 good windows out of the 5'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'should not show low results note when all requested slots found',
       (WidgetTester tester) async {
-        await _pumpResultsScreen(
-          tester,
-          slots: _twoSlots,
-          requestedRuns: 2,
-        );
+        await _pumpResultsScreen(tester, slots: _twoSlots, requestedRuns: 2);
 
         expect(find.textContaining('We found'), findsNothing);
       },
@@ -198,11 +264,7 @@ void main() {
     testWidgets('should show stale banner when weather data is stale', (
       WidgetTester tester,
     ) async {
-      await _pumpResultsScreen(
-        tester,
-        slots: _twoSlots,
-        isStale: true,
-      );
+      await _pumpResultsScreen(tester, slots: _twoSlots, isStale: true);
 
       expect(
         find.text('Using cached forecast. Pull down to refresh.'),
@@ -211,77 +273,64 @@ void main() {
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
 
-    testWidgets(
-      'should not show stale banner when weather data is fresh',
-      (WidgetTester tester) async {
-        await _pumpResultsScreen(tester, slots: _twoSlots);
+    testWidgets('should not show stale banner when weather data is fresh', (
+      WidgetTester tester,
+    ) async {
+      await _pumpResultsScreen(tester, slots: _twoSlots);
 
-        expect(
-          find.text('Using cached forecast. Pull down to refresh.'),
-          findsNothing,
-        );
-      },
-    );
+      expect(
+        find.text('Using cached forecast. Pull down to refresh.'),
+        findsNothing,
+      );
+    });
   });
 
   group('[Widget] ResultsScreen — refresh', () {
-    testWidgets(
-      'should show loading indicator in app bar when refresh button '
-      'is tapped',
-      (WidgetTester tester) async {
-        final weatherCompleter = Completer<WeatherResult>();
+    testWidgets('should show loading indicator in app bar when refresh button '
+        'is tapped', (WidgetTester tester) async {
+      final weatherCompleter = Completer<WeatherResult>();
 
-        await _pumpResultsScreen(
-          tester,
-          slots: _twoSlots,
-          location: testLocation,
-          weatherService: FakeWeatherService(
-            fetchCompleter: weatherCompleter,
-          ),
-        );
+      await _pumpResultsScreen(
+        tester,
+        slots: _twoSlots,
+        location: testLocation,
+        weatherService: FakeWeatherService(fetchCompleter: weatherCompleter),
+      );
 
-        await tester.tap(find.byTooltip('Refresh'));
-        await tester.pump();
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsNothing);
 
-        weatherCompleter.complete(
-          WeatherResult(
+      weatherCompleter.complete(
+        WeatherResult(forecast: buildForecastResponse(), isStale: false),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('should restore refresh icon after refresh completes', (
+      WidgetTester tester,
+    ) async {
+      await _pumpResultsScreen(
+        tester,
+        slots: _twoSlots,
+        location: testLocation,
+        weatherService: FakeWeatherService(
+          weatherResult: WeatherResult(
             forecast: buildForecastResponse(),
             isStale: false,
           ),
-        );
-        await tester.pumpAndSettle();
-      },
-    );
+        ),
+        runScheduler: FakeRunScheduler(slotsToReturn: _twoSlots),
+      );
 
-    testWidgets(
-      'should restore refresh icon after refresh completes',
-      (WidgetTester tester) async {
-        await _pumpResultsScreen(
-          tester,
-          slots: _twoSlots,
-          location: testLocation,
-          weatherService: FakeWeatherService(
-            weatherResult: WeatherResult(
-              forecast: buildForecastResponse(),
-              isStale: false,
-            ),
-          ),
-          runScheduler: FakeRunScheduler(slotsToReturn: _twoSlots),
-        );
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.byTooltip('Refresh'));
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.refresh), findsOneWidget);
-        expect(
-          find.byType(CircularProgressIndicator),
-          findsNothing,
-        );
-      },
-    );
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
 
     testWidgets(
       'should show snackbar when weather fetch fails during refresh',
@@ -290,9 +339,7 @@ void main() {
           tester,
           slots: _twoSlots,
           location: testLocation,
-          weatherService: FakeWeatherService(
-            error: Exception('Network error'),
-          ),
+          weatherService: FakeWeatherService(error: Exception('Network error')),
         );
 
         await tester.tap(find.byTooltip('Refresh'));
@@ -302,28 +349,27 @@ void main() {
       },
     );
 
-    testWidgets(
-      'should not refresh when location is null',
-      (WidgetTester tester) async {
-        final weatherService = FakeWeatherService(
-          weatherResult: WeatherResult(
-            forecast: buildForecastResponse(),
-            isStale: false,
-          ),
-        );
+    testWidgets('should not refresh when location is null', (
+      WidgetTester tester,
+    ) async {
+      final weatherService = FakeWeatherService(
+        weatherResult: WeatherResult(
+          forecast: buildForecastResponse(),
+          isStale: false,
+        ),
+      );
 
-        await _pumpResultsScreen(
-          tester,
-          slots: _twoSlots,
-          weatherService: weatherService,
-        );
+      await _pumpResultsScreen(
+        tester,
+        slots: _twoSlots,
+        weatherService: weatherService,
+      );
 
-        await tester.tap(find.byTooltip('Refresh'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
 
-        expect(weatherService.fetchCallCount, 0);
-      },
-    );
+      expect(weatherService.fetchCallCount, 0);
+    });
   });
 }
 
@@ -403,8 +449,9 @@ Future<void> _pumpResultsScreen(
   FakeWeatherService? weatherService,
   FakeRunScheduler? runScheduler,
 }) async {
-  final effectiveRequestedRuns =
-      requestedRuns == 0 ? slots.length : requestedRuns;
+  final effectiveRequestedRuns = requestedRuns == 0
+      ? slots.length
+      : requestedRuns;
 
   // Use nested routes so `/results` is a child of `/`, giving
   // the navigator a parent route to pop back to.
@@ -414,9 +461,7 @@ Future<void> _pumpResultsScreen(
       GoRoute(
         path: '/',
         builder: (BuildContext context, GoRouterState state) {
-          return const Scaffold(
-            body: Center(child: Text('Home Destination')),
-          );
+          return const Scaffold(body: Center(child: Text('Home Destination')));
         },
         routes: <RouteBase>[
           GoRoute(
@@ -435,28 +480,19 @@ Future<void> _pumpResultsScreen(
       overrides: <Override>[
         runSchedulerProvider.overrideWith(
           (ref) => _PreloadedScheduleNotifier(
-            ScheduleState(
-              slots: slots,
-              requestedRuns: effectiveRequestedRuns,
-            ),
+            ScheduleState(slots: slots, requestedRuns: effectiveRequestedRuns),
             ref: ref,
             runScheduler: runScheduler ?? FakeRunScheduler(),
           ),
         ),
         weatherProvider.overrideWith(
           (ref) => _PreloadedWeatherNotifier(
-            WeatherState(
-              forecast: buildForecastResponse(),
-              isStale: isStale,
-            ),
-            weatherService:
-                weatherService ?? FakeWeatherService(),
+            WeatherState(forecast: buildForecastResponse(), isStale: isStale),
+            weatherService: weatherService ?? FakeWeatherService(),
           ),
         ),
         settingsProvider.overrideWith(
-          (ref) => _PreloadedSettingsNotifier(
-            UserPreferences(unit: unit),
-          ),
+          (ref) => _PreloadedSettingsNotifier(UserPreferences(unit: unit)),
         ),
         locationProvider.overrideWith(
           (ref) => _PreloadedLocationNotifier(
@@ -528,11 +564,8 @@ class FakeLocationService extends LocationService {
 }
 
 class FakeWeatherService extends WeatherService {
-  FakeWeatherService({
-    this.weatherResult,
-    this.error,
-    this.fetchCompleter,
-  }) : super();
+  FakeWeatherService({this.weatherResult, this.error, this.fetchCompleter})
+    : super();
 
   final WeatherResult? weatherResult;
   final Exception? error;
@@ -541,10 +574,7 @@ class FakeWeatherService extends WeatherService {
   int fetchCallCount = 0;
 
   @override
-  Future<WeatherResult> fetchHourlyForecast(
-    double lat,
-    double lng,
-  ) async {
+  Future<WeatherResult> fetchHourlyForecast(double lat, double lng) async {
     fetchCallCount++;
 
     if (fetchCompleter != null) {
@@ -560,10 +590,7 @@ class FakeWeatherService extends WeatherService {
 }
 
 class FakeRunScheduler extends RunScheduler {
-  FakeRunScheduler({
-    this.slotsToReturn = const <TimeSlot>[],
-    this.error,
-  });
+  FakeRunScheduler({this.slotsToReturn = const <TimeSlot>[], this.error});
 
   final List<TimeSlot> slotsToReturn;
   final Exception? error;
