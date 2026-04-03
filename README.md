@@ -6,7 +6,7 @@ _Weather-smart run scheduling for iOS & Android_
 ![License](https://img.shields.io/badge/License-MIT-1B6B4A?style=flat-square)
 ![Platform](https://img.shields.io/badge/Platform-iOS%20%26%20Android-1B6B4A?style=flat-square&logo=flutter&logoColor=white)
 
-## Hero Description
+## Description
 
 RunCheck helps runners find the best times to run each week by analysing 7-day hourly weather forecasts. The user selects how many runs they want, and a scoring algorithm recommends optimal time slots based on temperature, precipitation, wind, and humidity. It was built as a solo side project with Flutter.
 
@@ -22,7 +22,7 @@ RunCheck helps runners find the best times to run each week by analysing 7-day h
 
 RunCheck is a mobile planning tool for people who want useful recommendations, not just raw weather data. Instead of asking the user to interpret a full forecast manually, the app narrows the week into a shortlist of practical running windows.
 
-It combines product thinking with clean mobile engineering. The experience is intentionally simple: choose a location, set a weekly run target, and get ranked recommendations with enough context to make a decision quickly.
+The experience is intentionally simple: choose a location, set a weekly run target, and get ranked recommendations with enough context to make a decision quickly.
 
 ## Problem
 
@@ -40,7 +40,6 @@ I built RunCheck to answer that specific question clearly. The project focuses o
 - Celsius and Fahrenheit support
 - Cyclist mode to increase wind sensitivity
 - Cached forecast fallback when fresh network data is unavailable
-- Dedicated results and settings flows with polished in-app transitions
 
 ## How It Works
 
@@ -115,17 +114,9 @@ flutter run -d android
 - State management and persistence choices that fit a small but real app
 - Attention to resilience through caching, error handling, and sensible defaults
 
-## Future Improvements
-
-- Add visual forecast explanations for why each slot scored well
-- Introduce route-aware recommendations based on terrain or exposure
-- Expand test coverage around scheduling edge cases and provider flows
-- Add screenshot assets and short demo video for richer repository presentation
-- Publish a privacy policy and formal MIT license file for public release
-
 ## Author Note
 
-RunCheck was built as a solo side project to explore the space between utility software and thoughtful product design. I used it to demonstrate that even a focused mobile app can show strong judgement in UX, architecture, and algorithm design when the scope is tight and the problem is clear.
+RunCheck was built as a solo side project to explore the space between utility software and thoughtful product design. I used it to demonstrate that even a small, focused mobile app can show strong judgement in UX, architecture, and algorithm design when the scope is tight and the problem is clear.
 
 ## License
 
